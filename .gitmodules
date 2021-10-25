@@ -1,6 +1,3 @@
-[submodule "pantheonrl"]
-  path = pantheonrl
-	url = git@github.com:Stanford-ILIAD/PantheonRL.git
-[submodule "hanabi-learning-environment"]
-	path = hanabi-learning-environment
-	url = git@github.com:hengyuan-hu/hanabi-learning-environment.git
+[submodule "PantheonRL"]
+	path = PantheonRL
+	url = https://github.com/Stanford-ILIAD/PantheonRL
