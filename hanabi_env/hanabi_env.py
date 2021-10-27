@@ -25,10 +25,12 @@ class PantheonHanabi(MultiAgentEnv):
         self.action_space = Discrete(self.hanabi_env.game.max_moves())
 
     def n_step(self, actions):
-        action = actions[0]
+        move = self.hanabi_env.game.get_move(actions[0])
 
         legal_moves = self.hanabi_env.state.legal_moves()
-        move = legal_moves[action % len(legal_moves)].to_dict()
+        if not any([str(move) == str(m) for m in legal_moves]):
+            move = legal_moves[0]
+        move = move.to_dict()
 
         obs, reward, done, info = self.hanabi_env.step(move)
 
