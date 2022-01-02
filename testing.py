@@ -5,16 +5,6 @@ import hanabi_env
 
 from pantheonrl.common.agents import OnPolicyAgent
 
-# han_config = {
-#     'colors': 5,
-#     'ranks': 5,
-#     'players': 2,
-#     'hand_size': 5,
-#     'observation_type': 1,
-#     'seed': 0,
-#     'random_start_player': True
-# }
-
 han_config={
             "colors":
                 2,
