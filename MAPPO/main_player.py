@@ -77,22 +77,68 @@ class MainPlayer:
                                          self.env.action_space)
         self.true_total_num_steps = 0
 
+    def collect_episode(self):
+        self.scores = []
+        for _ in range(self.episode_length):
+            # Sample actions
+            done = self.next_step()
+
+            # insert turn data into buffer
+            self.buffer.chooseinsert(self.turn_share_obs,
+                                     self.turn_obs,
+                                     self.turn_rnn_states,
+                                     self.turn_rnn_states_critic,
+                                     self.turn_actions,
+                                     self.turn_action_log_probs,
+                                     self.turn_values,
+                                     self.turn_rewards,
+                                     self.turn_masks,
+                                     self.turn_bad_masks,
+                                     self.turn_active_masks,
+                                     self.turn_available_actions)
+            # env reset
+            if done:
+                self.use_obs, self.use_share_obs, self.use_available_actions = self.env.reset()
+        # deal with the data of the last index in buffer
+        self.buffer.share_obs[-1] = self.turn_share_obs.copy()
+        self.buffer.obs[-1] = self.turn_obs.copy()
+        self.buffer.available_actions[-1] = self.turn_available_actions.copy()
+        self.buffer.active_masks[-1] = self.turn_active_masks.copy()
+
+        # deal with rewards
+        # 1. shift all rewards
+        # self.buffer.rewards[0:self.episode_length-1] = self.buffer.rewards[1:]
+        # # 2. last step rewards
+        # self.buffer.rewards[-1] = self.turn_rewards.copy()
+
+    def log(self, train_infos, episode, episodes, total_num_steps, start):
+        # save model
+        if (episode % self.save_interval == 0 or episode == episodes - 1):
+            self.save()
+
+        # log information
+        if train_infos is not None or (episode % self.log_interval == 0 and episode > 0):
+            end = time.time()
+            print("\n Env {} Algo {} Exp {} updates {}/{} episodes, total num timesteps {}/{}, FPS {}.\n"
+                    .format(self.all_args.hanabi_name,
+                            self.algorithm_name,
+                            self.experiment_name,
+                            episode,
+                            episodes,
+                            total_num_steps,
+                            self.num_env_steps,
+                            int(total_num_steps / (end - start))))
+
+            average_score = np.mean(self.scores) if len(self.scores) > 0 else 0.0
+            print("average score is {}.".format(average_score))
+            train_infos["average_step_rewards"] = np.mean(self.buffer.rewards)
+
+            # self.log_train(train_infos, self.true_total_num_steps)
+            print(train_infos)
+            print("Scores counts:", sorted(Counter(self.scores).items()))
+
     def run(self):
-        self.turn_obs = np.zeros((self.n_rollout_threads,*self.buffer.obs.shape[2:]), dtype=np.float32)
-        self.turn_share_obs = np.zeros((self.n_rollout_threads,*self.buffer.share_obs.shape[2:]), dtype=np.float32)
-        self.turn_available_actions = np.zeros((self.n_rollout_threads,*self.buffer.available_actions.shape[2:]), dtype=np.float32)
-        self.turn_values = np.zeros((self.n_rollout_threads,*self.buffer.value_preds.shape[2:]), dtype=np.float32)
-        self.turn_actions = np.zeros((self.n_rollout_threads,*self.buffer.actions.shape[2:]), dtype=np.float32)
-        self.turn_action_log_probs = np.zeros((self.n_rollout_threads,*self.buffer.action_log_probs.shape[2:]), dtype=np.float32)
-        self.turn_rnn_states = np.zeros((self.n_rollout_threads,*self.buffer.rnn_states.shape[2:]), dtype=np.float32)
-        self.turn_rnn_states_critic = np.zeros_like(self.turn_rnn_states)
-        self.turn_masks = np.ones((self.n_rollout_threads,*self.buffer.masks.shape[2:]), dtype=np.float32)
-        self.turn_active_masks = np.ones_like(self.turn_masks)
-        self.turn_bad_masks = np.ones_like(self.turn_masks)
-        self.turn_rewards = np.zeros((self.n_rollout_threads, *self.buffer.rewards.shape[2:]), dtype=np.float32)
-
-        self.turn_rewards_since_last_action = np.zeros_like(self.turn_rewards)
-
+        self.setup_data()
         self.warmup()
 
         start = time.time()
@@ -101,80 +147,15 @@ class MainPlayer:
         total_num_steps = 0
 
         for episode in range(episodes):
-            if self.use_linear_lr_decay:
-                self.trainer.policy.lr_decay(episode, episodes)
-
-            self.scores = []
-            if episode > 0:
-                # deal with the data of the last index in buffer
-                self.buffer.share_obs[-1] = self.turn_share_obs.copy()
-                self.buffer.obs[-1] = self.turn_obs.copy()
-                self.buffer.available_actions[-1] = self.turn_available_actions.copy()
-                self.buffer.active_masks[-1] = self.turn_active_masks.copy()
-
-                # deal with rewards
-                # 1. shift all rewards
-                # self.buffer.rewards[0:self.episode_length-1] = self.buffer.rewards[1:]
-                # # 2. last step rewards
-                # self.buffer.rewards[-1] = self.turn_rewards.copy()
-                print(np.mean(self.buffer.rewards))
-
-                # compute return and update network
-                self.compute()
-                train_infos = self.train()
-                print("DONE TRAINING:", episode)
-
-            for _ in range(self.episode_length):
-                # Sample actions
-                done = self.next_step()
-                total_num_steps += 1
-
-                # insert turn data into buffer
-                self.buffer.chooseinsert(self.turn_share_obs,
-                                         self.turn_obs,
-                                         self.turn_rnn_states,
-                                         self.turn_rnn_states_critic,
-                                         self.turn_actions,
-                                         self.turn_action_log_probs,
-                                         self.turn_values,
-                                         self.turn_rewards,
-                                         self.turn_masks,
-                                         self.turn_bad_masks,
-                                         self.turn_active_masks,
-                                         self.turn_available_actions)
-                # env reset
-                if done:
-                    self.use_obs, self.use_share_obs, self.use_available_actions = self.env.reset()
-
+            self.collect_episode()
+            total_num_steps += self.episode_length
             # post process
-            # save model
-            if (episode % self.save_interval == 0 or episode == episodes - 1):
-                self.save()
+            self.log(train_infos, episode, episodes, total_num_steps, start)
 
-            # log information
-            if train_infos is not None or (episode % self.log_interval == 0 and episode > 0):
-                end = time.time()
-                print("\n Env {} Algo {} Exp {} updates {}/{} episodes, total num timesteps {}/{}, FPS {}.\n"
-                        .format(self.all_args.hanabi_name,
-                                self.algorithm_name,
-                                self.experiment_name,
-                                episode,
-                                episodes,
-                                total_num_steps,
-                                self.num_env_steps,
-                                int(total_num_steps / (end - start))))
-
-                average_score = np.mean(self.scores) if len(self.scores) > 0 else 0.0
-                print("average score is {}.".format(average_score))
-                train_infos["average_step_rewards"] = np.mean(self.buffer.rewards)
-
-                # self.log_train(train_infos, self.true_total_num_steps)
-                print(train_infos)
-            print("Scores counts:", sorted(Counter(self.scores).items()))
-
-            # eval
-            if episode % self.eval_interval == 0 and self.use_eval:
-                self.eval(self.true_total_num_steps)
+            # compute return and update network
+            self.compute()
+            train_infos = self.train()
+            print("DONE TRAINING:", episode)
 
     def next_step(self):
         self.trainer.prep_rollout()
@@ -215,6 +196,22 @@ class MainPlayer:
             self.turn_masks[0, 0] = 1
 
         return done
+
+    def setup_data(self):
+        self.turn_obs = np.zeros((self.n_rollout_threads,*self.buffer.obs.shape[2:]), dtype=np.float32)
+        self.turn_share_obs = np.zeros((self.n_rollout_threads,*self.buffer.share_obs.shape[2:]), dtype=np.float32)
+        self.turn_available_actions = np.zeros((self.n_rollout_threads,*self.buffer.available_actions.shape[2:]), dtype=np.float32)
+        self.turn_values = np.zeros((self.n_rollout_threads,*self.buffer.value_preds.shape[2:]), dtype=np.float32)
+        self.turn_actions = np.zeros((self.n_rollout_threads,*self.buffer.actions.shape[2:]), dtype=np.float32)
+        self.turn_action_log_probs = np.zeros((self.n_rollout_threads,*self.buffer.action_log_probs.shape[2:]), dtype=np.float32)
+        self.turn_rnn_states = np.zeros((self.n_rollout_threads,*self.buffer.rnn_states.shape[2:]), dtype=np.float32)
+        self.turn_rnn_states_critic = np.zeros_like(self.turn_rnn_states)
+        self.turn_masks = np.ones((self.n_rollout_threads,*self.buffer.masks.shape[2:]), dtype=np.float32)
+        self.turn_active_masks = np.ones_like(self.turn_masks)
+        self.turn_bad_masks = np.ones_like(self.turn_masks)
+        self.turn_rewards = np.zeros((self.n_rollout_threads, *self.buffer.rewards.shape[2:]), dtype=np.float32)
+
+        self.turn_rewards_since_last_action = np.zeros_like(self.turn_rewards)
 
     def warmup(self):
         # reset env
