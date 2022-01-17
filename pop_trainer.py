@@ -8,43 +8,35 @@ from config import get_config
 import os
 from pathlib import Path
 
-POPULATION_SIZE = 3
+def get_loss(args):
+    if args.loss_type is None:
+        return PopulationLoss()
+    elif args.loss_type == 'ADAP':
+        return ADAPLoss(args.loss_param)
+    else:
+        print("Invalid Loss Type; Assuming no loss")
+        return PopulationLoss()
 
 
 def generate_player(args):
     args.hanabi_name = 'MaskedHanabi'
-    args.n_rollout_threads = 1
-    args.episode_length = 200
-    args.ppo_epoch = 15
-    args.gain = 0.01
-    args.lr = 7e-4
-    args.critic_lr = 1e-3
-    args.hidden_size = 512
-    args.layer_N = 2
-    args.entropy_coef = 0.015
-    args.use_recurrent_policy = False
-    args.use_value_active_masks = False
-    args.use_policy_active_masks = False
 
     han_config={
                 "colors":
-                    2,
+                    args.han_colors,
                 "ranks":
-                    5,
+                    args.han_ranks,
                 "players":
                     2,
                 "hand_size":
-                    2,
+                    args.han_hand,
                 "max_information_tokens":
-                    3,
+                    args.han_info,
                 "max_life_tokens":
-                    1,
+                    args.han_life,
                 "observation_type":1
             }
     env = MaskedHanabi(han_config)
-    print(env.observation_space)
-    print(env.share_observation_space)
-    print(env.action_space)
     run_dir = Path(os.path.split(os.path.dirname(os.path.abspath(__file__)))[0] + "/results")
     config = {
         'all_args': args,
@@ -56,13 +48,16 @@ def generate_player(args):
     ego = MainPlayer(config)
     partner = CentralizedAgent(ego, 1)
     env.add_partner_agent(partner)
+    args.seed += 100
     return ego
 
 
 def main():
     args = get_config().parse_args()
-    players = [generate_player(args) for _ in range(POPULATION_SIZE)]
-    pop_runner = PopPlayer(args, players, ADAPLoss(0.2))
+    print(args)
+    population_size = args.pop_size
+    players = [generate_player(args) for _ in range(population_size)]
+    pop_runner = PopPlayer(args, players, get_loss(args))
     pop_runner.run()
 
 
