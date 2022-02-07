@@ -77,14 +77,24 @@ class MainPlayer:
                                          self.env.action_space)
         self.true_total_num_steps = 0
 
-    def collect_episode(self):
-        self.scores = []
-        for _ in range(self.episode_length):
+    def collect_episode(self, buffer=None, length=None, save_scores=True):
+        if buffer is None:
+            altbuffer = False
+            buffer = self.buffer
+        else:
+            altbuffer = True
+            old_obs, old_share_obs, old_avail = self.use_obs, self.use_share_obs, self.use_available_actions
+            self.use_obs, self.use_share_obs, self.use_available_actions = self.env.reset()
+        if length is None:
+            length = self.episode_length
+        if save_scores:
+            self.scores = []
+        for _ in range(length):
             # Sample actions
-            done = self.next_step()
+            done = self.next_step(self.scores if save_scores else None)
 
             # insert turn data into buffer
-            self.buffer.chooseinsert(self.turn_share_obs,
+            buffer.chooseinsert(self.turn_share_obs,
                                      self.turn_obs,
                                      self.turn_rnn_states,
                                      self.turn_rnn_states_critic,
@@ -100,10 +110,13 @@ class MainPlayer:
             if done:
                 self.use_obs, self.use_share_obs, self.use_available_actions = self.env.reset()
         # deal with the data of the last index in buffer
-        self.buffer.share_obs[-1] = self.turn_share_obs.copy()
-        self.buffer.obs[-1] = self.turn_obs.copy()
-        self.buffer.available_actions[-1] = self.turn_available_actions.copy()
-        self.buffer.active_masks[-1] = self.turn_active_masks.copy()
+        buffer.share_obs[-1] = self.turn_share_obs.copy()
+        buffer.obs[-1] = self.turn_obs.copy()
+        buffer.available_actions[-1] = self.turn_available_actions.copy()
+        buffer.active_masks[-1] = self.turn_active_masks.copy()
+
+        if altbuffer:
+            self.use_obs, self.use_share_obs, self.use_available_actions = old_obs, old_share_obs, old_avail
 
         # deal with rewards
         # 1. shift all rewards
@@ -157,7 +170,7 @@ class MainPlayer:
             train_infos = self.train()
             print("DONE TRAINING:", episode)
 
-    def next_step(self):
+    def next_step(self, scores = None):
         self.trainer.prep_rollout()
         value, action, action_log_prob, rnn_state, rnn_state_critic \
             = self.trainer.policy.get_actions(self.use_share_obs,
@@ -190,7 +203,9 @@ class MainPlayer:
             self.turn_rnn_states[0, 0] = 0
             self.turn_rnn_states_critic[0, 0] = 0
 
-            self.scores.append(self.running_score)
+            if scores is not None:
+                scores.append(self.running_score)
+
             self.running_score = 0
         else:
             self.turn_masks[0, 0] = 1
