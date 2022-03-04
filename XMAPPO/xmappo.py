@@ -294,15 +294,15 @@ class XMAPPO():
                     train_info['critic_grad_norm'] += critic_grad_norm
                     train_info['ratio'] += imp_weights.mean()
 
-                for i in range(self.popsize):
-                    for j in range(self.popsize - 1):
-                        self.set_agent(i)
+                for i in range(self.popsize - 1):
+                    for j in range(i + 1):
+                        self.set_agent(i + 1)
 
-                        sample = xgenres[i][j]
-                        train_info = fulltraininfo[i]
+                        sample = xgenres[j][i]
+                        train_info = fulltraininfo[i + 1]
 
                         value_loss, critic_grad_norm, policy_loss, dist_entropy, actor_grad_norm, imp_weights \
-                            = self.ppo_update(sample, multisample, -xp_weight, update_actor)
+                            = self.ppo_update(sample, multisample, xp_weight, update_actor)
 
                         train_info['value_loss'] += value_loss.item()
                         train_info['policy_loss'] += policy_loss.item()

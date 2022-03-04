@@ -52,7 +52,7 @@ def main():
     players = [generate_player(args) for _ in range(N)]
     xgym = generate_gym(args)
     xp_buffers = [[generate_buffer(args, xgym) for _ in range(N - i - 1)] for i in range(N)]
-    pop_runner = XPlayer(args, players, xgym, xp_buffers, args.episode_length, 1)
+    pop_runner = XPlayer(args, players, xgym, xp_buffers, args.episode_length, 0.5)
     pop_runner.run()
 
 

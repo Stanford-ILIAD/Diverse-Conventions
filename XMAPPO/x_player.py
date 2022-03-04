@@ -2,7 +2,10 @@ import time
 from itertools import combinations
 
 from .xmappo import XMAPPO
+from MAPPO.utils.util import _t2n
 from hanabi_agent import CentralizedAgent
+
+import numpy as np
 
 
 class XPlayer:
@@ -26,7 +29,17 @@ class XPlayer:
             for j in range(N-i-1):
                 self.xp_buffers[i].append(xp_buffers[i][j])
 
+    def update_values(self, buffer, player2):
+        for t in range(buffer.episode_length + 1):
+            for p in range(2):
+                cent_obs = buffer.share_obs[t, 0, p]
+                rnn_states = buffer.rnn_states[t, 0, p]
+                masks = buffer.masks[t, 0, p]
+                new_vals = player2.policy.get_values(cent_obs, rnn_states, masks)
+                buffer.value_preds[t, 0, p] = _t2n(new_vals)
+
     def collect_cross(self, p1, p2):
+        print(p1, p2)
         player1 = self.players[p1]
         player2 = self.players[p2]
         partner = CentralizedAgent(player1, 1, player2.policy)
@@ -38,8 +51,27 @@ class XPlayer:
         player1.env = self.xgym
         player1.collect_episode(buffer, self.xlength, False)
 
+        buffer.rewards = -buffer.rewards
+        print("REWARDS", buffer.rewards.flatten())
+
+        self.update_values(buffer, player2)
+
         self.xgym.partners[0].clear()
         player1.env = origenv
+
+    def compute_xbuf(self, p1, p2):
+        policy = self.players[p2].policy
+        buffer = self.xp_buffers[p1][p2-1]
+        next_values = policy.get_values(
+                            np.concatenate(buffer.share_obs[-1]),
+                            np.concatenate(buffer.rnn_states_critic[-1]),
+                            np.concatenate(buffer.masks[-1])
+                        )
+        next_values = np.array(np.split(
+                                _t2n(next_values),
+                                self.players[p2].n_rollout_threads)
+                               )
+        buffer.compute_returns(next_values, self.trainer.value_normalizer)
 
     def run(self):
         for player in self.players:
@@ -58,6 +90,7 @@ class XPlayer:
 
             for i, j in combinations(range(len(self.players)), 2):
                 self.collect_cross(i, j)
+            print(self.xp_buffers)
             print("END POOL")
 
             for idx, player in enumerate(self.players):
@@ -69,6 +102,9 @@ class XPlayer:
 
                 # compute return and update network
                 player.compute()
+
+            for i, j in combinations(range(len(self.players)), 2):
+                self.compute_xbuf(i, j)
 
             train_infos = self.train()
             print("DONE TRAINING:", episode)
