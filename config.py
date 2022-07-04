@@ -179,7 +179,7 @@ def get_config():
     parser.add_argument("--use_wandb", action='store_false', default=True, help="[for wandb usage], by default True, will log date to wandb server. or else will use tensorboard to log data.")
 
     # env parameters
-    parser.add_argument("--env_name", type=str, default='Hanabi', help="specify the name of environment")
+    parser.add_argument("--env_name", type=str, default='Tree', help="specify the name of environment")
     parser.add_argument("--use_obs_instead_of_state", action='store_true',
                         default=False, help="Whether to use global state or concatenated obs")
 
@@ -298,4 +298,11 @@ def get_config():
 
     parser.add_argument("--pop_size", type=int, default=3, help="Size of Population to Train")
 
+    parser.add_argument("--xp_weight", type=float, default=1, help="Parameter of Cross-Play Weight")
+    parser.add_argument("--mp_weight", type=float, default=0.1, help="Parameter of Mixed-Play Weight")
+    parser.add_argument("--mix_prob", type=float, default=0.5, help="Parameter of Mixed-Play Probability")
+    parser.add_argument("--env_length", type=int, default=3, help="Max length of phase 1 mix-play")
+
+    parser.add_argument("--use_average", action='store_true', default=False, help="Use average instead of max for population training")
+    parser.add_argument("--simul_env", action='store_true', default=False, help="The environment has simultaneous actions (instead of turn-based)")
     return parser

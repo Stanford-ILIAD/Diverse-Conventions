@@ -302,7 +302,7 @@ class XMAPPO():
                         train_info = fulltraininfo[i + 1]
 
                         value_loss, critic_grad_norm, policy_loss, dist_entropy, actor_grad_norm, imp_weights \
-                            = self.ppo_update(sample, multisample, xp_weight, update_actor)
+                            = self.ppo_update(sample, multisample, update_actor, xp_weight)
 
                         train_info['value_loss'] += value_loss.item()
                         train_info['policy_loss'] += policy_loss.item()

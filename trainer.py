@@ -8,18 +8,18 @@ from pathlib import Path
 
 args = get_config().parse_args()
 args.hanabi_name = 'MaskedHanabi'
-# args.n_rollout_threads = 1
-# args.episode_length = 2000
-# args.ppo_epoch = 15
-# args.gain = 0.01
-# args.lr = 7e-4
-# args.critic_lr = 1e-3
-# args.hidden_size = 512
-# args.layer_N = 2
-# args.entropy_coef = 0.015
-# args.use_recurrent_policy = False
-# args.use_value_active_masks = False
-# args.use_policy_active_masks = False
+args.n_rollout_threads = 1
+args.episode_length = 2000
+args.ppo_epoch = 15
+args.gain = 0.01
+args.lr = 7e-4
+args.critic_lr = 1e-3
+args.hidden_size = 512
+args.layer_N = 2
+args.entropy_coef = 0.015
+args.use_recurrent_policy = False
+args.use_value_active_masks = False
+args.use_policy_active_masks = False
 print(args)
 
 han_config={
