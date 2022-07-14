@@ -75,9 +75,11 @@ class XD:
         """
         Calculate value function loss.
         :param values: (torch.Tensor) value function predictions.
-        :param value_preds_batch: (torch.Tensor) "old" value  predictions from data batch (used for value clip loss)
+        :param value_preds_batch: (torch.Tensor) "old" value predictions
+              from data batch (used for value clip loss)
         :param return_batch: (torch.Tensor) reward to go returns.
-        :param active_masks_batch: (torch.Tensor) denotes if agent is active or dead at a given timesep.
+        :param active_masks_batch: (torch.Tensor) denotes if agent is
+              active or dead at a given timesep.
 
         :return value_loss: (torch.Tensor) value function loss.
         """
@@ -142,9 +144,9 @@ class XD:
             adv_targ,
             available_actions_batch,
         ) = sample
-        
+
         old_action_log_probs_batch = check(old_action_log_probs_batch).to(**self.tpdv)
-        adv_targ = check(adv_targ).to(**self.tpdv)
+        adv_targ = check(adv_targ).to(**self.tpdv) * dir_weight
 
         value_preds_batch = check(value_preds_batch).to(**self.tpdv)
         return_batch = check(return_batch).to(**self.tpdv)
@@ -161,10 +163,10 @@ class XD:
             available_actions_batch,
             active_masks_batch,
         )
-        
+
         # actor update
         imp_weights = torch.exp(action_log_probs - old_action_log_probs_batch)
-        ######### TODO? Only do importance weights for our own actor?
+
         surr1 = imp_weights * adv_targ
         surr2 = (
             torch.clamp(imp_weights, 1.0 - self.clip_param, 1.0 + self.clip_param)
@@ -182,9 +184,9 @@ class XD:
             ).mean()
 
         #######################################################
-        ## OTHER OPTION: Multiply policy_loss
+        # Multiply policy_loss for sp/mp updates
         #######################################################
-        policy_loss = policy_action_loss * dir_weight
+        policy_loss = policy_action_loss # * dir_weight
 
         self.policy.actor_optimizer.zero_grad()
 
@@ -258,12 +260,10 @@ class XD:
 
     def get_partial_gen(self, buffer, advantages, idx):
         if self._use_recurrent_policy:
-            ### FIX
             data_generator = buffer.partial_recurrent_generator(
                 advantages, idx, self.num_mini_batch, self.data_chunk_length
             )
         elif self._use_naive_recurrent:
-            ### FIX
             data_generator = buffer.partial_naive_recurrent_generator(
                 advantages, idx, self.num_mini_batch
             )
@@ -304,7 +304,8 @@ class XD:
         :param buffer: (SharedReplayBuffer) buffer containing training data.
         :param update_actor: (bool) whether to update actor network.
 
-        :return train_info: (dict) contains information regarding training update (e.g. loss, grad norms, etc).
+        :return train_info: (dict) contains information regarding training
+                update (e.g. loss, grad norms, etc).
         """
         sp_adv = self.calc_advantanges(sp_buf)
         xp0_adv = []

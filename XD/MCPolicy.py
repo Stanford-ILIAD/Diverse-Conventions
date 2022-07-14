@@ -46,6 +46,7 @@ class MCPolicy(R_MAPPOPolicy):
 
     def set_sp(self):
         self.critic = self.sp_critic
+        self.critic_optimizer = self.sp_critic_optimizer
 
     def set_xp(self, ego_id, other_convention):
         if ego_id == 0:

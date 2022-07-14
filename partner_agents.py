@@ -5,6 +5,7 @@ from MAPPO.main_player import MainPlayer
 from MAPPO.r_actor_critic import R_Actor
 
 import numpy as np
+import torch
 
 
 class CentralizedAgent(Agent):
@@ -62,6 +63,28 @@ class CentralizedAgent(Agent):
             self.cent_player.turn_rnn_states_critic[0, self.player_id] = 0
         else:
             self.cent_player.turn_masks[0, self.player_id] = 1
+
+
+class DecentralizedAgent(Agent):
+    def __init__(self, policy):
+        self.actor = policy
+        self.rnn_states = torch.zeros(1)
+        self.masks = torch.ones(1)
+
+    def get_action(self, obs, record=True):
+        obs, available_actions = obs
+
+        (action, _, rnn_state) = self.actor(
+            obs,
+            self.rnn_states,
+            self.masks,
+            available_actions,
+        )
+        self.rnn_states = rnn_state
+        return _t2n(action)
+
+    def update(self, reward, done):
+        pass
 
 
 class MixedAgent(Agent):

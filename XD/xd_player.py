@@ -6,20 +6,20 @@ from MAPPO.main_player import MainPlayer
 
 from partner_agents import CentralizedAgent, MixedAgent
 
-import os
 import time
 from collections import Counter
 
 import numpy as np
 import torch
+import os
 
 
 class XDPlayer(MainPlayer):
     def __init__(
         self,
         config,
-        policy,
-        sp_buf,
+        policy: MCPolicy,
+        sp_buf: SharedReplayBuffer,
         xp_buf0,
         xp_buf1,
         mp_buf,
@@ -104,15 +104,17 @@ class XDPlayer(MainPlayer):
         self.mp_ind = other_convention
 
     def collect_mp_episode(self, turn_based=True):
-        # TODO: fix MP
-        # self.collect_episode()
         partner = self.env.partners[0][0]
         self.scores = []
 
         step = 0
         while step < self.episode_length:
-            self.use_obs, self.use_share_obs, self.use_available_actions = self.env.reset()
-            
+            (
+                self.use_obs,
+                self.use_share_obs,
+                self.use_available_actions,
+            ) = self.env.reset()
+
             phase1len = np.random.randint(self.env_length - 1) + 1
             partner.second_phase = False
             for _ in range(phase1len):
@@ -127,7 +129,7 @@ class XDPlayer(MainPlayer):
 
                 # insert turn data into buffer
                 if turn_based:
-                    buffer.chooseinsert(
+                    self.buffer.chooseinsert(
                         self.turn_share_obs,
                         self.turn_obs,
                         self.turn_rnn_states,
@@ -142,7 +144,7 @@ class XDPlayer(MainPlayer):
                         self.turn_available_actions,
                     )
                 else:
-                    buffer.insert(
+                    self.buffer.insert(
                         self.turn_share_obs,
                         self.turn_obs,
                         self.turn_rnn_states,
@@ -157,7 +159,7 @@ class XDPlayer(MainPlayer):
                         self.turn_available_actions,
                     )
                 step += 1
-            
+
     def next_mp_step(self, scores, partner):
         self.trainer.prep_rollout()
 
@@ -179,7 +181,7 @@ class XDPlayer(MainPlayer):
             self.turn_rnn_states_critic[0, self.ego_id],
             self.turn_masks[0, self.ego_id],
         )
-        
+
         self.turn_obs[0, self.ego_id] = self.use_obs.copy()
         self.turn_share_obs[0, self.ego_id] = self.use_share_obs.copy()
         self.turn_available_actions[0, self.ego_id] = self.use_available_actions.copy()
@@ -214,7 +216,6 @@ class XDPlayer(MainPlayer):
             self.turn_masks[0, self.ego_id] = 1
 
         return done
-            
 
     def log(self, train_infos, episode, episodes, total_num_steps, start):
         # save model
@@ -227,7 +228,8 @@ class XDPlayer(MainPlayer):
         ):
             end = time.time()
             print(
-                "\n Env {} Algo {} Exp {} updates {}/{} episodes, total num timesteps {}/{}, FPS {}.\n".format(
+                "\n Env {} Algo {} Exp {} updates {}/{} episodes, \
+                total num timesteps {}/{}, FPS {}.\n".format(
                     self.all_args.hanabi_name,
                     self.algorithm_name,
                     self.experiment_name,
@@ -241,6 +243,11 @@ class XDPlayer(MainPlayer):
 
             average_score = np.mean(self.sp_scores) if len(self.sp_scores) > 0 else 0.0
             print("average score is {}.".format(average_score))
+            for i in range(len(self.agent_set)):
+                avg = np.mean(self.xp_scores[0][i])
+                print(f"average xp score for {i} conv 0 is {avg}.")
+                avg = np.mean(self.xp_scores[1][i])
+                print(f"average xp score for {i} conv 1 is {avg}.")
             train_infos["average_step_rewards"] = np.mean(self.sp_buf.rewards)
 
             # self.log_train(train_infos, self.true_total_num_steps)
@@ -338,8 +345,12 @@ class XDPlayer(MainPlayer):
 
     def save(self):
         """Save policy's actor and critic networks."""
+        print(os.path.exists(self.save_dir))
+        os.makedirs(self.save_dir, exist_ok=True)
         policy_actor = self.trainer.policy.actor
-        torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor.pt")
+        torch.save(policy_actor.state_dict(), str(self.save_dir) +
+                   "/actor.pt")
+        print("SAVED TO", self.save_dir)
         policy_critic_sp = self.trainer.policy.sp_critic
         torch.save(policy_critic_sp.state_dict(), str(self.save_dir) + "/sp_critic.pt")
         for i in range(len(self.agent_set)):

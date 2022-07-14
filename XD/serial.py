@@ -5,7 +5,6 @@ from MAPPO.utils.shared_buffer import SharedReplayBuffer
 import torch
 import numpy as np
 import random
-import os
 from pathlib import Path
 
 
@@ -13,6 +12,7 @@ def set_rands(seed):
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
+
 
 def generate_buffer(args, env):
     return SharedReplayBuffer(
@@ -62,7 +62,7 @@ def run_serial(N, args, env, base_dir, device):
             args.xp_weight,
             args.mp_weight,
             args.mix_prob,
-            args.env_length
+            args.env_length,
         )
 
         runner.run()

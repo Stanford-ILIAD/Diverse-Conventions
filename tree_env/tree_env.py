@@ -18,7 +18,7 @@ def to_mult_bin(a):
 class PantheonTree(MultiAgentEnv):
 
     def __init__(self):
-        super(PantheonTree, self).__init__(ego_ind=0, n_players=2)
+        super().__init__(ego_ind=0, n_players=2)
 
         self.observation_space = MultiBinary(DEPTH + 1)
         self.action_space = Discrete(2)
@@ -59,3 +59,12 @@ class PantheonTree(MultiAgentEnv):
         self.state = 1
         self.po_states = [1, 1]
         return (0,), (self.get_full_obs(),)
+
+
+class DecentralizedTree(PantheonTree):
+    def __init__(self):
+        super().__init__()
+
+    def get_full_obs(self):
+        obs = super().get_full_obs()
+        return obs[0], obs[2]
