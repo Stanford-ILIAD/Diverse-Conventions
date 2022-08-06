@@ -151,28 +151,28 @@ class RightBiasAgent(Agent):
         if diff <= -4:
             move = 3
         elif diff == -3:
-            move = 3
+            move = 3 # DIFF
         elif diff == -2:
             move = 2
         elif diff == -1:
-            if ego != NUM_SPACES - 1:
+            if alt != NUM_SPACES - 1: # DIFF
                 move = 3
             else:
                 move = 1
         elif diff == 0:
-            if ego != NUM_SPACES - 1:
+            if ego != NUM_SPACES - 1: # DIFF
                 move = 2
             else:
                 move = 1
         elif diff == 1:
-            if alt != NUM_SPACES - 1:
+            if ego != NUM_SPACES - 1: # DIFF
                 move = 2
             else:
                 move = 0
         elif diff == 2:
             move = 1
         elif diff == 3:
-            move = 1
+            move = 1 # DIFF
         elif diff >= 4:
             move = 0
         return np.array([move])

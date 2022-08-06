@@ -186,12 +186,12 @@ class XD:
         #######################################################
         # Multiply policy_loss for sp/mp updates
         #######################################################
-        policy_loss = policy_action_loss # * dir_weight
+        policy_loss = policy_action_loss  # * dir_weight
 
         self.policy.actor_optimizer.zero_grad()
-
-        if update_actor:
-            (policy_loss - dist_entropy * self.entropy_coef).backward()
+        actor_loss = policy_loss - dist_entropy * self.entropy_coef
+        # if update_actor:
+        #     (policy_loss - dist_entropy * self.entropy_coef).backward()
 
         if self._use_max_grad_norm:
             actor_grad_norm = nn.utils.clip_grad_norm_(
@@ -200,7 +200,7 @@ class XD:
         else:
             actor_grad_norm = get_gard_norm(self.policy.actor.parameters())
 
-        self.policy.actor_optimizer.step()
+        # self.policy.actor_optimizer.step()
 
         # critic update
         value_loss = self.cal_value_loss(
@@ -227,7 +227,7 @@ class XD:
             dist_entropy,
             actor_grad_norm,
             imp_weights,
-        )
+        ), actor_loss
 
     def calc_advantanges(self, buffer):
         if self._use_popart or self._use_valuenorm:
@@ -282,7 +282,7 @@ class XD:
                 dist_entropy,
                 actor_grad_norm,
                 imp_weights,
-            ) = self.ppo_update(sample, weight, update_actor)
+            ), actor_loss = self.ppo_update(sample, weight, update_actor)
 
             train_info["value_loss"] += value_loss.item()
             train_info["policy_loss"] += policy_loss.item()
@@ -290,6 +290,7 @@ class XD:
             train_info["actor_grad_norm"] += actor_grad_norm
             train_info["critic_grad_norm"] += critic_grad_norm
             train_info["ratio"] += imp_weights.mean()
+            return actor_loss
 
     def get_best(self, bufs):
         means = np.zeros(len(bufs))
@@ -322,12 +323,12 @@ class XD:
             best_1 = self.get_best(xp_buf1)
         for _ in range(self.ppo_epoch):
             self.policy.set_sp()
-            self.train_step(self.get_gen(sp_buf, sp_adv), train_info, 1, update_actor)
+            loss = self.train_step(self.get_gen(sp_buf, sp_adv), train_info, 1, update_actor)
             if self.xp_weight != 0:
                 if self.use_average:
                     for i in range(len(self.agent_set)):
                         self.policy.set_xp(0, i)
-                        self.train_step(
+                        loss += self.train_step(
                             self.get_partial_gen(xp_buf0[i], xp0_adv[i], 0),
                             train_info,
                             -self.xp_weight,
@@ -335,7 +336,7 @@ class XD:
                         )
 
                         self.policy.set_xp(1, i)
-                        self.train_step(
+                        loss += self.train_step(
                             self.get_partial_gen(xp_buf1[i], xp1_adv[i], 1),
                             train_info,
                             -self.xp_weight,
@@ -344,7 +345,7 @@ class XD:
                 elif len(self.agent_set) > 0:
                     i = best_0
                     self.policy.set_xp(0, i)
-                    self.train_step(
+                    loss += self.train_step(
                         self.get_partial_gen(xp_buf0[i], xp0_adv[i], 0),
                         train_info,
                         -self.xp_weight,
@@ -353,7 +354,7 @@ class XD:
 
                     i = best_1
                     self.policy.set_xp(1, i)
-                    self.train_step(
+                    loss += self.train_step(
                         self.get_partial_gen(xp_buf1[i], xp1_adv[i], 1),
                         train_info,
                         -self.xp_weight,
@@ -362,12 +363,14 @@ class XD:
             if self.mp_weight != 0:
                 self.policy.set_sp()
                 for i in range(len(self.agent_set)):
-                    self.train_step(
+                    loss += self.train_step(
                         self.get_gen(mp_buf[i], mp_adv[i]),
                         train_info,
                         self.mp_weight / len(self.agent_set),
                         update_actor,
                     )
+            loss.backward()
+            self.policy.actor_optimizer.step()
 
         num_updates = self.ppo_epoch * self.num_mini_batch
 

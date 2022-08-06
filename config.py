@@ -305,4 +305,6 @@ def get_config():
 
     parser.add_argument("--use_average", action='store_true', default=False, help="Use average instead of max for population training")
     parser.add_argument("--simul_env", action='store_true', default=False, help="The environment has simultaneous actions (instead of turn-based)")
+
+    parser.add_argument("--run_dir", type=str, default='standard', help="Name of run directory")
     return parser

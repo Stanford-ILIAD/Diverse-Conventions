@@ -14,6 +14,10 @@ import torch
 import os
 
 
+def get_histogram(x):
+    return ",".join([f"{key}:{val}" for key, val in sorted(Counter(x).items())])
+
+
 class XDPlayer(MainPlayer):
     def __init__(
         self,
@@ -222,11 +226,45 @@ class XDPlayer(MainPlayer):
         if episode % self.save_interval == 0 or episode == episodes - 1:
             self.save()
 
+        if episode == 0:
+            # Setup files
+            files = []
+            # log.txt
+            # Env algo exp updates ... avg score, avg xp score
+            files.append(self.log_dir + "/log.txt")
+
+            # sp.txt
+            # t: episode, Counter
+            files.append(self.log_dir + "/sp.txt")
+
+            # xp_i_0, xp_i_1, mp_i
+            # t: episode, Counter
+            for i in range(len(self.agent_set)):
+                files.append(self.log_dir + f"/xp_{i}_0.txt")
+                files.append(self.log_dir + f"/xp_{i}_1.txt")
+                files.append(self.log_dir + f"/mp_{i}.txt")
+
+            os.makedirs(self.log_dir, exist_ok=True)
+            for file in files:
+                with open(file, "w", encoding="UTF-8"):
+                    pass
+
         # log information
         if train_infos is not None or (
             episode % self.log_interval == 0 and episode > 0
         ):
             end = time.time()
+            files = {}
+
+            average_score = np.mean(self.sp_scores)
+
+            general_log = (
+                f"Updates:{episode}/{episodes},"
+                + f"Timesteps:{total_num_steps}/{self.num_env_steps},"
+                + f"FPS:{total_num_steps//(end-start)},"
+                + f"avg_sp:{average_score}"
+            )
+
             print(
                 "\n Env {} Algo {} Exp {} updates {}/{} episodes, \
                 total num timesteps {}/{}, FPS {}.\n".format(
@@ -241,40 +279,43 @@ class XDPlayer(MainPlayer):
                 )
             )
 
-            average_score = np.mean(self.sp_scores) if len(self.sp_scores) > 0 else 0.0
             print("average score is {}.".format(average_score))
+
             for i in range(len(self.agent_set)):
-                avg = np.mean(self.xp_scores[0][i])
-                print(f"average xp score for {i} conv 0 is {avg}.")
-                avg = np.mean(self.xp_scores[1][i])
-                print(f"average xp score for {i} conv 1 is {avg}.")
+                avg0 = np.mean(self.xp_scores[0][i])
+                avg1 = np.mean(self.xp_scores[1][i])
+                general_log += f",avg_xp_{i}_0:{avg0},avg_xp_{i}_1:{avg1}"
+                print(f"average xp score for {i} conv 0 is {avg0}.")
+                print(f"average xp score for {i} conv 1 is {avg1}.")
+
             train_infos["average_step_rewards"] = np.mean(self.sp_buf.rewards)
 
             # self.log_train(train_infos, self.true_total_num_steps)
             print(train_infos)
-            print("Self-play Scores counts:", sorted(Counter(self.sp_scores).items()))
+            general_log += "," + ",".join(
+                [f"{key}:{val}" for key, val in train_infos.items()]
+            )
+
+            files["log.txt"] = general_log
+
+            files["sp.txt"] = get_histogram(self.sp_scores)
+            print("Self-play Scores counts: ", files["sp.txt"])
+            for i in range(len(self.agent_set)):
+                for j in range(2):
+                    files[f"xp_{i}_{j}.txt"] = get_histogram(self.xp_scores[j][i])
+                    print(
+                        f"Cross-play Scores counts (ego id {j}, convention {i}): ",
+                        files[f"xp_{i}_{j}.txt"],
+                    )
 
             for i in range(len(self.agent_set)):
+                files[f"mp_{i}.txt"] = get_histogram(self.mp_scores[i])
                 print(
-                    "Cross-play Scores counts (ego id 0, convention ",
-                    str(i),
-                    "):",
-                    sorted(Counter(self.xp_scores[0][i]).items()),
+                    f"Mix-play Scores counts (convention {i}): ", files[f"mp_{i}.txt"]
                 )
-                print(
-                    "Cross-play Scores counts (ego id 1, convention ",
-                    str(i),
-                    "):",
-                    sorted(Counter(self.xp_scores[1][i]).items()),
-                )
-
-            for i in range(len(self.agent_set)):
-                print(
-                    "Mix-play Scores counts (convention ",
-                    str(i),
-                    "):",
-                    sorted(Counter(self.mp_scores[i]).items()),
-                )
+            for key, val in files.items():
+                with open(f"{self.log_dir}/{key}", "a", encoding="UTF-8") as file:
+                    file.write(f"episode:{episode},{val}\n")
 
     def run(self):
         self.set_sp()
@@ -348,8 +389,7 @@ class XDPlayer(MainPlayer):
         print(os.path.exists(self.save_dir))
         os.makedirs(self.save_dir, exist_ok=True)
         policy_actor = self.trainer.policy.actor
-        torch.save(policy_actor.state_dict(), str(self.save_dir) +
-                   "/actor.pt")
+        torch.save(policy_actor.state_dict(), str(self.save_dir) + "/actor.pt")
         print("SAVED TO", self.save_dir)
         policy_critic_sp = self.trainer.policy.sp_critic
         torch.save(policy_critic_sp.state_dict(), str(self.save_dir) + "/sp_critic.pt")

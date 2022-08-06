@@ -83,6 +83,9 @@ class DecentralizedAgent(Agent):
         self.rnn_states = rnn_state
         return _t2n(action)
 
+    def predict(self, observation):
+        return self.get_action((observation, None))
+
     def update(self, reward, done):
         pass
 

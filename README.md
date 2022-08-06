@@ -34,17 +34,17 @@ python tree_cli.py SAFE
 Run this for loading the first convention (after training):
 
 ```
-python tree_cli.py LOAD --partner-load ../Tree/results/standard/1/convention0/models/actor.pt
+python tree_cli.py LOAD --partner-load ./Tree/results/standard/1/convention0/models/actor.pt
 ```
 
 To load the second convention (after training):
 ```
-python tree_cli.py LOAD --partner-load ../Tree/results/standard/1/convention1/models/actor.pt
+python tree_cli.py LOAD --partner-load ./Tree/results/standard/1/convention1/models/actor.pt
 ```
 
 In general, you can run
 ```
-python tree_cli.py LOAD --partner-load ../Tree/results/standard/[SEED#]/convention[CONVENTION#]/models/actor.pt
+python tree_cli.py LOAD --partner-load ./Tree/results/standard/[SEED#]/convention[CONVENTION#]/models/actor.pt
 ```
 
 ## Line Environment
@@ -64,15 +64,29 @@ python numline_cli.py LEFT
 Run this for loading the first convention (after training):
 
 ```
-python numline_cli.py LOAD --partner-load ../Line/results/standard/1/convention0/models/actor.pt
+python numline_cli.py LOAD --partner-load ./Line/results/standard/1/convention0/models/actor.pt
 ```
 
 To load the second convention (after training):
 ```
-python numline_cli.py LOAD --partner-load ../Line/results/standard/1/convention1/models/actor.pt
+python numline_cli.py LOAD --partner-load ./Line/results/standard/1/convention1/models/actor.pt
 ```
 
 In general, you can run
 ```
-python numline_cli.py LOAD --partner-load ../Line/results/standard/[SEED#]/convention[CONVENTION#]/models/actor.pt
+python numline_cli.py LOAD --partner-load ./Line/results/standard/[SEED#]/convention[CONVENTION#]/models/actor.pt
 ```
+
+## Overcooked Environment
+To train two conventions:
+
+```
+python serial_trainer.py --num_env_steps 400000 --pop_size 2 --xp_weight 0.5 --mp_weight 0.0 --lr 1e-4 --env_name Overcooked --episode_length 4000 --seed 1
+```
+
+To try out the website, run this:
+```
+python overcooked_env/flask_app.py --modelpath_p0 ./Overcooked/results/standard/1/convention0/models/actor.pt --modelpath_p1 ./Overcooked/results/standard/1/convention0/models/actor.pt --layout_name simple
+```
+
+In general, you can switch out convention0 with whichever conventions you want to test out.
