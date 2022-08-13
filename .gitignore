@@ -5,9 +5,7 @@ __pycache__/
 data/
 instance/
 .*node_modules/
-logs/
 *__pycache__*
 *.ipynb_checkpoints*
 trajs/
-models/
 .mypy_cache/
