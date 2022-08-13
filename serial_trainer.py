@@ -51,7 +51,7 @@ def main():
     with open(run_dir + "/" + "args.txt", "w", encoding="UTF-8") as file:
         file.write(str(args))
 
-    run_serial(pop_size, args, env, run_dir, "cpu")
+    run_serial(pop_size, args, env, run_dir, "cpu", restored=args.restored)
 
 
 if __name__ == "__main__":

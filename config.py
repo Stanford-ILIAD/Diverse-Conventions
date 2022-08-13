@@ -307,4 +307,5 @@ def get_config():
     parser.add_argument("--simul_env", action='store_true', default=False, help="The environment has simultaneous actions (instead of turn-based)")
 
     parser.add_argument("--run_dir", type=str, default='standard', help="Name of run directory")
+    parser.add_argument("--restored", type=int, default=0, help="Agent to continue training from")
     return parser

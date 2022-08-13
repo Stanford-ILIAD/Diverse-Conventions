@@ -6,10 +6,8 @@ from MAPPO.utils.valuenorm import ValueNorm
 
 from collections import defaultdict
 
-from .MCPolicy import MCPolicy
 
-
-class XD:
+class MAPPO:
     """
     Trainer class for MAPPO to update policies.
     :param args: (argparse.Namespace) arguments containing relevant model,
@@ -21,22 +19,13 @@ class XD:
     def __init__(
         self,
         args,
-        policy: MCPolicy,
-        agent_set,
-        xp_weight,
-        mp_weight,
-        use_average,
+        policy,
         device=torch.device("cpu"),
     ):
 
         self.device = device
         self.tpdv = dict(dtype=torch.float32, device=device)
         self.policy = policy
-
-        self.agent_set = agent_set
-        self.xp_weight = xp_weight
-        self.mp_weight = mp_weight
-        self.use_average = use_average
 
         self.clip_param = args.clip_param
         self.ppo_epoch = args.ppo_epoch
@@ -292,14 +281,7 @@ class XD:
             train_info["ratio"] += imp_weights.mean().item()
             return actor_loss
 
-    def get_best(self, bufs0, bufs1):
-        means = np.zeros(len(bufs0))
-        for i, (bi0, bi1) in enumerate(zip(bufs0, bufs1)):
-            means[i] = np.mean(bi0.rewards) + np.mean(bi1.rewards)
-
-        return np.argmax(means)
-
-    def train(self, sp_buf, xp_buf0, xp_buf1, mp_buf, update_actor=True, best_i=None):
+    def train(self, xp_buf0, xp_buf1, update_actor=True):
         """
         Perform a training update using minibatch GD.
         :param buffer: (SharedReplayBuffer) buffer containing training data.
@@ -308,66 +290,24 @@ class XD:
         :return train_info: (dict) contains information regarding training
                 update (e.g. loss, grad norms, etc).
         """
-        sp_adv = self.calc_advantanges(sp_buf)
-        xp0_adv = []
-        xp1_adv = []
-        mp_adv = []
-        for i in range(len(self.agent_set)):
-            xp0_adv.append(self.calc_advantanges(xp_buf0[i]))
-            xp1_adv.append(self.calc_advantanges(xp_buf1[i]))
-            mp_adv.append(self.calc_advantanges(mp_buf[i]))
+        xp_adv0 = self.calc_advantanges(xp_buf0)
+        xp_adv1 = self.calc_advantanges(xp_buf1)
 
         train_info = defaultdict(lambda: 0)
-        if len(self.agent_set) > 0 and best_i is None:
-            best_i = self.get_best(xp_buf0, xp_buf1)
+
         for _ in range(self.ppo_epoch):
-            self.policy.set_sp()
-            loss = self.train_step(self.get_gen(sp_buf, sp_adv), train_info, 1, update_actor)
-            if self.xp_weight != 0:
-                if self.use_average:
-                    for i in range(len(self.agent_set)):
-                        self.policy.set_xp(0, i)
-                        loss += self.train_step(
-                            self.get_partial_gen(xp_buf0[i], xp0_adv[i], 0),
+            loss = self.train_step(
+                            self.get_partial_gen(xp_buf0, xp_adv0, 0),
                             train_info,
-                            -self.xp_weight,
-                            update_actor,
+                            1,
+                            update_actor
+                        ) + self.train_step(
+                            self.get_partial_gen(xp_buf1, xp_adv1, 1),
+                            train_info,
+                            1,
+                            update_actor
                         )
 
-                        self.policy.set_xp(1, i)
-                        loss += self.train_step(
-                            self.get_partial_gen(xp_buf1[i], xp1_adv[i], 1),
-                            train_info,
-                            -self.xp_weight,
-                            update_actor,
-                        )
-                elif len(self.agent_set) > 0:
-                    i = best_i
-                    self.policy.set_xp(0, i)
-                    loss += self.train_step(
-                        self.get_partial_gen(xp_buf0[i], xp0_adv[i], 0),
-                        train_info,
-                        -self.xp_weight,
-                        update_actor,
-                    )
-
-                    i = best_i
-                    self.policy.set_xp(1, i)
-                    loss += self.train_step(
-                        self.get_partial_gen(xp_buf1[i], xp1_adv[i], 1),
-                        train_info,
-                        -self.xp_weight,
-                        update_actor,
-                    )
-            if self.mp_weight != 0 and len(self.agent_set) > 0:
-                self.policy.set_sp()
-                i = best_i
-                loss += self.train_step(
-                    self.get_gen(mp_buf[i], mp_adv[i]),
-                    train_info,
-                    self.mp_weight / len(self.agent_set),
-                    update_actor,
-                )
             loss.backward()
 
             if self._use_max_grad_norm:
@@ -384,19 +324,12 @@ class XD:
         for k in train_info.keys():
             train_info[k] /= num_updates
 
-        train_info["best_i"] = best_i
         return train_info
 
     def prep_training(self):
         self.policy.actor.train()
-        for crit in (
-            [self.policy.critic] + self.policy.xp_critic0 + self.policy.xp_critic1
-        ):
-            crit.train()
+        self.policy.critic.train()
 
     def prep_rollout(self):
         self.policy.actor.eval()
-        for crit in (
-            [self.policy.critic] + self.policy.xp_critic0 + self.policy.xp_critic1
-        ):
-            crit.eval()
+        self.policy.critic.eval()

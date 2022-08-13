@@ -20,7 +20,7 @@ def generate_buffer(args, env):
     )
 
 
-def run_serial(N, args, env, base_dir, device):
+def run_serial(N, args, env, base_dir, device, restored=0):
     print(N, "agents total")
     agent_set = []
     set_rands(args.seed)
@@ -64,7 +64,11 @@ def run_serial(N, args, env, base_dir, device):
             args.mix_prob,
             args.env_length,
         )
-
-        runner.run()
+        if agent_num < restored:
+            runner.model_dir = runner.save_dir
+            runner.restore()
+            print("restored", agent_num)
+        else:
+            runner.run()
 
         agent_set.append(next_agent.actor)

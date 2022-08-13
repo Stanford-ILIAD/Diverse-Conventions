@@ -47,6 +47,8 @@ class XDPlayer(MainPlayer):
         self.mix_prob = mix_prob
         self.env_length = env_length
 
+        self.best_i = None
+
         if self.model_dir is not None:
             self.restore()
 
@@ -329,6 +331,8 @@ class XDPlayer(MainPlayer):
         train_infos = None
         total_num_steps = 0
 
+        self.best_i = None
+
         for episode in range(episodes):
             self.set_sp()
             self.collect_episode(turn_based=not self.all_args.simul_env)
@@ -336,7 +340,16 @@ class XDPlayer(MainPlayer):
 
             self.xp_scores = [([[]] * len(self.agent_set)) for _ in range(2)]
             self.mp_scores = [[]] * len(self.agent_set)
-            for i in range(len(self.agent_set)):
+
+            agent_iterator = range(len(self.agent_set))
+            
+            if len(self.agent_set) > 0 and episode % len(self.agent_set) == 0:
+                self.best_i = None
+
+            if self.best_i is not None:
+                agent_iterator = [self.best_i]
+            
+            for i in agent_iterator:
                 if self.xp_weight != 0:
                     self.set_xp(0, i)
                     self.collect_episode(turn_based=not self.all_args.simul_env)
@@ -378,10 +391,11 @@ class XDPlayer(MainPlayer):
         """Train policies with data in buffer."""
         self.trainer.prep_training()
         train_infos = self.trainer.train(
-            self.sp_buf, self.xp_buf0, self.xp_buf1, self.mp_buf
+            self.sp_buf, self.xp_buf0, self.xp_buf1, self.mp_buf, best_i=self.best_i
         )
         for buf in [self.sp_buf] + self.xp_buf0 + self.xp_buf1 + self.mp_buf:
             buf.reset_after_update()
+        self.best_i = train_infos["best_i"]
         return train_infos
 
     def save(self):
