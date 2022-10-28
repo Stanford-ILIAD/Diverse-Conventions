@@ -7,15 +7,15 @@ import numpy as np
 
 from pantheonrl.common.agents import Agent
 
-from .numline_env import TIME, VALID_MOVES, NUM_SPACES, PantheonLine
+from .numline_env import TIME, BUFFER, VALID_MOVES, NUM_SPACES, PantheonLine
 
 STR_MOVES = [str(i) for i in VALID_MOVES]
 
 def parse_obs(obs: np.ndarray) -> Tuple[int, int, int]:
     """Converts obs into ego-loc, alt-loc, time"""
     time = int(obs[-1])
-    ego_loc = int(obs[time])
-    alt_loc = int(obs[time + TIME])
+    ego_loc = int(obs[0]) - BUFFER
+    alt_loc = int(obs[0 + TIME]) - BUFFER
     return ego_loc, alt_loc, time
 
 

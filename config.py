@@ -308,4 +308,6 @@ def get_config():
 
     parser.add_argument("--run_dir", type=str, default='standard', help="Name of run directory")
     parser.add_argument("--restored", type=int, default=0, help="Agent to continue training from")
+
+    parser.add_argument("--seed_skip", type=float, default=100, help="Number to increment seed for next trained convention")
     return parser

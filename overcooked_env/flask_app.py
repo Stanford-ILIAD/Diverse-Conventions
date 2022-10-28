@@ -189,7 +189,7 @@ if __name__ == '__main__':
         ALT_TRANSITIONS = simultaneous_transitions.get_alt_transitions()
     else:
         # at least one policy should be specified, the other can be human
-        assert(ARGS.modelpath_p0 or ARGS.modelpath_p1)
+        # assert(ARGS.modelpath_p0 or ARGS.modelpath_p1)
         dummy_env = DecentralizedOvercooked(ARGS.layout_name)
         if ARGS.modelpath_p0:
             actor = R_Actor(ARGS, dummy_env.observation_space, dummy_env.action_space)

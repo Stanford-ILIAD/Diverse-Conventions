@@ -5,7 +5,7 @@ from numline_env.numline_env import DecentralizedLine
 from numline_env.numline_agent import (LineUser, RandomLineAgent,
                                        LeftBiasAgent, RightBiasAgent)
 from partner_agents import DecentralizedAgent
-from MAPPO.r_actor_critic import R_Actor
+from MAPPO.r_actor_critic import R_Actor, R_Critic
 from config import get_config
 
 EGO_LIST = ['RAND', 'LEFT', 'RIGHT', 'LOAD']
@@ -25,7 +25,11 @@ def gen_agent(value, env, args=None):
             sys.exit()
         state_dict = torch.load(args.partner_load)
         actor.load_state_dict(state_dict)
-        return DecentralizedAgent(actor)
+
+        critic = R_Critic(args, env.share_observation_space)
+        critic_dict = torch.load(args.partner_load.removesuffix("actor.pt") + "sp_critic.pt")
+        critic.load_state_dict(critic_dict)
+        return DecentralizedAgent(actor, critic)
 
 def run_sim(env, ego, args):
     env.add_partner_agent(LineUser(env))
@@ -34,11 +38,15 @@ def run_sim(env, ego, args):
     while True:
         print(f'Game #{game}')
         obs = env.reset()
+        while ego.get_value(obs) > 1.0:
+            obs = env.reset()
+        print("VALUE IS:", ego.get_value(obs))
         done = False
         reward = 0
         while not done:
             action = ego.get_action(obs, False)
             obs, newreward, done, _ = env.step(action)
+            print("NEW VALUE IS:", ego.get_value(obs))
             reward += newreward
         print('Reward is', reward)
         print()

@@ -97,7 +97,7 @@ class XDPlayer(MainPlayer):
     def set_mp(self, other_convention):
         self.ego_id = 0
         self.env.ego_ind = 0
-        self.policy.set_sp()
+        self.policy.set_mp()
         self.buffer = self.mp_buf[other_convention]
 
         partner = MixedAgent(
@@ -112,7 +112,7 @@ class XDPlayer(MainPlayer):
     def collect_mp_episode(self, turn_based=True):
         partner = self.env.partners[0][0]
         self.scores = []
-
+        self.running_score = 0
         step = 0
         while step < self.episode_length:
             (
@@ -334,6 +334,8 @@ class XDPlayer(MainPlayer):
         self.best_i = None
 
         for episode in range(episodes):
+            if self.use_linear_lr_decay:
+                self.trainer.policy.lr_decay(episode, episodes)
             self.set_sp()
             self.collect_episode(turn_based=not self.all_args.simul_env)
             self.sp_scores = self.scores

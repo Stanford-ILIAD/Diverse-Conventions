@@ -360,7 +360,7 @@ class XD:
                         update_actor,
                     )
             if self.mp_weight != 0 and len(self.agent_set) > 0:
-                self.policy.set_sp()
+                self.policy.set_mp()
                 i = best_i
                 loss += self.train_step(
                     self.get_gen(mp_buf[i], mp_adv[i]),

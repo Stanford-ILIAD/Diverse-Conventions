@@ -4,6 +4,8 @@ from collections import Counter
 
 import torch
 
+from statistics import stdev
+
 from tree_env.tree_env import DecentralizedTree
 from tree_env.tree_agent import SafeAgent, RiskyAgent, RandomTreeAgent
 
@@ -69,7 +71,10 @@ def gen_agent(value, env, envname, fload, args=None):
 def run_sim(env, ego, alt):
     env.add_partner_agent(alt)
     rewards = []
-    for _ in range(100):
+    states = []
+    fails = 0
+    aligned = 0
+    for game in range(25): # 10000
         # print(f'Game #{game}')
         obs = env.reset()
         done = False
@@ -78,9 +83,21 @@ def run_sim(env, ego, alt):
             action = ego.get_action(obs, False)
             obs, newreward, done, _ = env.step(action)
             reward += newreward
+            # print(newreward)
+            if newreward <= -1.0:
+                fails += 1
         rewards.append(reward)
+        if reward == 2.0:
+            aligned += 1
+        # states.append(env.state[0])
+        # print(env.state)
     print(get_histogram(rewards))
+    # print(get_histogram(states))
     print(sum(rewards)/len(rewards))
+    # print("STDEV:", stdev(rewards))
+    print("fails:", fails/25)
+    print("aligned:", aligned/25)
+
 
 def main(parser):
     args = parser.parse_args()

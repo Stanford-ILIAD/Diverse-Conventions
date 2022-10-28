@@ -36,6 +36,9 @@ class PopPlayer:
 
                 # compute return and update network
                 player.compute()
+                if player.use_linear_lr_decay:
+                    print(idx)
+                    self.trainer.policies[idx].lr_decay(episode, episodes)
 
             train_infos = self.train()
             print("DONE TRAINING:", episode)

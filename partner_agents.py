@@ -66,12 +66,13 @@ class CentralizedAgent(Agent):
 
 
 class DecentralizedAgent(Agent):
-    def __init__(self, policy):
+    def __init__(self, policy, critic=None):
         self.actor = policy
+        self.critic = critic
         self.rnn_states = torch.zeros(1)
         self.masks = torch.ones(1)
 
-    def get_action(self, obs, record=True):
+    def get_action(self, obs, record=True, deterministic=True):
         obs, available_actions = obs
 
         (action, _, rnn_state) = self.actor(
@@ -79,9 +80,16 @@ class DecentralizedAgent(Agent):
             self.rnn_states,
             self.masks,
             available_actions,
+            deterministic=deterministic
         )
         self.rnn_states = rnn_state
         return _t2n(action)
+
+    def get_value(self, obs):
+        obs, available_actions = obs
+
+        values, _ = self.critic(obs, self.rnn_states, self.masks)
+        return _t2n(values)
 
     def predict(self, observation):
         return self.get_action((observation, None))

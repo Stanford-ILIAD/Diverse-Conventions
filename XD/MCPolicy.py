@@ -18,6 +18,14 @@ class MCPolicy(R_MAPPOPolicy):
         self.sp_critic = self.critic
         self.sp_critic_optimizer = self.critic_optimizer
 
+        self.mp_critic = R_Critic(args, self.share_obs_space, self.device)
+        self.mp_critic_optimizer = torch.optim.Adam(
+            self.mp_critic.parameters(),
+            lr=self.critic_lr,
+            eps=self.opti_eps,
+            weight_decay=self.weight_decay,
+        )
+
         self.xp_critic0 = [
             R_Critic(args, self.share_obs_space, self.device) for _ in range(num_priors)
         ]
@@ -47,6 +55,10 @@ class MCPolicy(R_MAPPOPolicy):
     def set_sp(self):
         self.critic = self.sp_critic
         self.critic_optimizer = self.sp_critic_optimizer
+
+    def set_mp(self):
+        self.critic = self.mp_critic
+        self.critic_optimizer = self.mp_critic_optimizer
 
     def set_xp(self, ego_id, other_convention):
         if ego_id == 0:

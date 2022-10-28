@@ -23,8 +23,8 @@ def generate_buffer(args, env):
 def run_serial(N, args, env, base_dir, device, restored=0):
     print(N, "agents total")
     agent_set = []
-    set_rands(args.seed)
     for agent_num in range(N):
+        set_rands(args.seed + args.seed_skip * agent_num)
         print("Training agent", agent_num)
         next_agent = MCPolicy(
             args,

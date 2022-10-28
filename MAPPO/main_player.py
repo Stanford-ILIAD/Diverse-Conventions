@@ -11,6 +11,11 @@ import numpy as np
 import torch
 
 
+def get_histogram(x):
+    return ",".join([f"{key}:{val}" for key, val in sorted(Counter(x).items())])
+
+
+
 class MainPlayer:
     def __init__(self, config):
         self._init_vars(config)
@@ -86,6 +91,7 @@ class MainPlayer:
     def collect_episode(self, buffer=None, length=None, save_scores=True, turn_based=True):
         buffer = buffer or self.buffer
         self.use_obs, self.use_share_obs, self.use_available_actions = self.env.reset()
+        self.running_score = 0
         if length is None:
             length = self.episode_length
         if save_scores:
@@ -138,13 +144,41 @@ class MainPlayer:
         if episode % self.save_interval == 0 or episode == episodes - 1:
             self.save()
 
+        if episode == 0:
+            # Setup files
+            files = []
+            # log.txt
+            # Env algo exp updates ... avg score, avg xp score
+            files.append(self.log_dir + "/log.txt")
+
+            # sp.txt
+            # t: episode, Counter
+            files.append(self.log_dir + "/sp.txt")
+
+            os.makedirs(self.log_dir, exist_ok=True)
+            for file in files:
+                with open(file, "w", encoding="UTF-8"):
+                    pass
+
         # log information
         if train_infos is not None or (
             episode % self.log_interval == 0 and episode > 0
         ):
             end = time.time()
+            files = {}
+
+            average_score = np.mean(self.scores)
+
+            general_log = (
+                f"Updates:{episode}/{episodes},"
+                + f"Timesteps:{total_num_steps}/{self.num_env_steps},"
+                + f"FPS:{total_num_steps//(end-start)},"
+                + f"avg_sp:{average_score}"
+            )
+
             print(
-                "\n Env {} Algo {} Exp {} updates {}/{} episodes, total num timesteps {}/{}, FPS {}.\n".format(
+                "\n Env {} Algo {} Exp {} updates {}/{} episodes, \
+                total num timesteps {}/{}, FPS {}.\n".format(
                     self.all_args.hanabi_name,
                     self.algorithm_name,
                     self.experiment_name,
@@ -156,13 +190,55 @@ class MainPlayer:
                 )
             )
 
-            average_score = np.mean(self.scores) if len(self.scores) > 0 else 0.0
             print("average score is {}.".format(average_score))
+
             train_infos["average_step_rewards"] = np.mean(self.buffer.rewards)
 
             # self.log_train(train_infos, self.true_total_num_steps)
             print(train_infos)
-            print("Scores counts:", sorted(Counter(self.scores).items()))
+            general_log += "," + ",".join(
+                [f"{key}:{val}" for key, val in train_infos.items()]
+            )
+
+            files["log.txt"] = general_log
+
+            files["sp.txt"] = get_histogram(self.scores)
+            print("Self-play Scores counts: ", files["sp.txt"])
+
+            for key, val in files.items():
+                with open(f"{self.log_dir}/{key}", "a", encoding="UTF-8") as file:
+                    file.write(f"episode:{episode},{val}\n")
+                
+    # def log(self, train_infos, episode, episodes, total_num_steps, start):
+    #     # save model
+    #     if episode % self.save_interval == 0 or episode == episodes - 1:
+    #         self.save()
+
+    #     # log information
+    #     if train_infos is not None or (
+    #         episode % self.log_interval == 0 and episode > 0
+    #     ):
+    #         end = time.time()
+    #         print(
+    #             "\n Env {} Algo {} Exp {} updates {}/{} episodes, total num timesteps {}/{}, FPS {}.\n".format(
+    #                 self.all_args.hanabi_name,
+    #                 self.algorithm_name,
+    #                 self.experiment_name,
+    #                 episode,
+    #                 episodes,
+    #                 total_num_steps,
+    #                 self.num_env_steps,
+    #                 int(total_num_steps / (end - start)),
+    #             )
+    #         )
+
+    #         average_score = np.mean(self.scores) if len(self.scores) > 0 else 0.0
+    #         print("average score is {}.".format(average_score))
+    #         train_infos["average_step_rewards"] = np.mean(self.buffer.rewards)
+
+    #         # self.log_train(train_infos, self.true_total_num_steps)
+    #         print(train_infos)
+    #         print("Scores counts:", sorted(Counter(self.scores).items()))
 
     def run(self):
         self.setup_data()
@@ -176,6 +252,8 @@ class MainPlayer:
         total_num_steps = 0
 
         for episode in range(episodes):
+            if self.use_linear_lr_decay:
+                self.trainer.policy.lr_decay(episode, episodes)
             self.collect_episode()
             total_num_steps += self.episode_length
             # post process
