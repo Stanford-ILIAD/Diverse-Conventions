@@ -1,0 +1,1 @@
+episode:1,Updates:1/20,Timesteps:400/4000,FPS:228.0,avg_sp:0.5,value_loss:2.078625710805257,policy_loss:-0.08431212628881136,dist_entropy:0.674185021718343,actor_grad_norm:1.3595374822616577,critic_grad_norm:25.803272247314453,ratio:1.0055649280548096,average_step_rewards:0.2524999976158142
