@@ -1,0 +1,1 @@
+{"ep_states": [[]], "ep_rewards": [[]], "ep_actions": [[]], "mdp_params": [{"layout_name": "coordination_ring", "num_items_for_soup": 3, "rew_shaping_params": null, "cook_time": 20, "start_order_list": null}]}
