@@ -22,12 +22,14 @@ from config import get_config
 
 app = Flask(__name__)
 
+MLPs = {}
+MDPs = {}
+POLICIES = {}
 
-def get_prediction(s, policy, layout_name, algo):
+
+def get_prediction(s, policy):
     s = torch.tensor(s).unsqueeze(0).float()
-    # print(s.size())
     actions = policy.predict(observation=s)
-    # print(actions)
     return int(actions[0])
 
 
@@ -50,8 +52,8 @@ def process_state(state_dict, layout_name):
         return OvercookedState(**state_dict)
 
     state = state_from_dict(copy.deepcopy(state_dict))
-    print(state.to_dict())
-
+    MDP = MDPs[layout_name]
+    MLP = MLPs[layout_name]
     return MDP.featurize_state(state, MLP)
 
 
@@ -100,34 +102,9 @@ def predict():
         state_dict, player_id_dict, server_layout_name, algo, timestep = data_json["state"], data_json[
             "npc_index"], data_json["layout_name"], data_json["algo"], data_json["timestep"]
         player_id = int(player_id_dict)
-        layout_name = NAME_TRANSLATION[server_layout_name]
-        s0, s1 = process_state(state_dict, layout_name)
-
-        # print(s0.to_dict())
-        # print(s1.to_dict())
-        print("---\n")
-
-        if ARGS.replay_traj:
-            if player_id == 0:
-                a = int(EGO_TRANSITIONS.acts[timestep][0]) if timestep < len(
-                    EGO_TRANSITIONS.acts) else 4
-            elif player_id == 1:
-                a = int(ALT_TRANSITIONS.acts[timestep][0]) if timestep < len(
-                    EGO_TRANSITIONS.acts) else 4
-            else:
-                assert(False)
-        else:
-            if player_id == 0:
-                s, policy = s0, POLICY_P0
-            elif player_id == 1:
-                s, policy = s1, POLICY_P1
-            else:
-                assert(False)
-            a = get_prediction(s, policy, layout_name, algo)
-
-        # print(a, player_id, s0, s1)
-        # print(algo)
-        print("sending action ", a)
+        s_all = process_state(state_dict, server_layout_name)
+        policy = POLICIES[server_layout_name][algo]
+        a = get_prediction(s_all[player_id], policy)
         return jsonify({'action': a})
 
 
@@ -135,14 +112,28 @@ def predict():
 def updatemodel():
     if request.method == 'POST':
         data_json = json.loads(request.data)
-        traj_dict, traj_id, server_layout_name, algo = data_json["traj"], data_json[
+        traj_dict, traj_id, layout_name, algo = data_json["traj"], data_json[
             "traj_id"], data_json["layout_name"], data_json["algo"]
-        layout_name = NAME_TRANSLATION[server_layout_name]
         print(traj_id)
 
         if ARGS.trajs_savepath:
             # Save trajectory (save this to keep reward information)
-            filename = "%s.json" % (ARGS.trajs_savepath)
+            folder = f"{ARGS.trajs_savepath}/{layout_name}/{algo}"
+            os.makedirs(folder, exist_ok=True)
+
+            cur_entries = os.listdir(folder)
+            idnum = -1
+            for entry in cur_entries:
+                splitentry = entry.split('.')
+                if splitentry[-1] == 'json':
+                    newestid = int(splitentry[0])
+                    idnum = max(idnum, newestid)
+
+            idnum += 1
+
+            savepath = folder + "/" + str(idnum)
+
+            filename = "%s.json" % (savepath)
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             with open(filename, 'w') as f:
                 json.dump(traj_dict, f)
@@ -150,13 +141,11 @@ def updatemodel():
             # Save transitions minimal (only state/action/done, no reward)
             simultaneous_transitions = convert_traj_to_simultaneous_transitions(
                 traj_dict, layout_name)
-            simultaneous_transitions.write_transition(ARGS.trajs_savepath)
+            simultaneous_transitions.write_transition(savepath)
 
         # Finetune model: todo
 
-        REPLAY_TRAJ_IDX = 0
-        done = True
-        return jsonify({'status': done})
+        return jsonify({'status': True})
 
 
 @app.route('/')
@@ -164,47 +153,7 @@ def root():
     return app.send_static_file('index.html')
 
 
-if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(
-    #     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser = get_config()
-    parser.add_argument('--modelpath_p0', type=str,
-                        help="path to load model for player 0")
-    parser.add_argument('--modelpath_p1', type=str,
-                        help="path to load model for player 1")
-    parser.add_argument('--replay_traj', type=str,
-                        help="replay traj, don't run policies")
-    parser.add_argument('--layout_name', type=str,
-                        required=True, help="layout name")
-    parser.add_argument('--trajs_savepath', type=str,
-                        help="path to save trajectories")
-    ARGS = parser.parse_args()
-
-    if ARGS.replay_traj:
-        assert(not ARGS.modelpath_p0 and not ARGS.modelpath_p1)
-        env = gym.make('OvercookedMultiEnv-v0', layout_name=ARGS.layout_name)
-        simultaneous_transitions = SimultaneousTransitions.read_transition(
-            "%s.npy" % ARGS.replay_traj, env.observation_space, env.action_space)
-        EGO_TRANSITIONS = simultaneous_transitions.get_ego_transitions()
-        ALT_TRANSITIONS = simultaneous_transitions.get_alt_transitions()
-    else:
-        # at least one policy should be specified, the other can be human
-        # assert(ARGS.modelpath_p0 or ARGS.modelpath_p1)
-        dummy_env = DecentralizedOvercooked(ARGS.layout_name)
-        if ARGS.modelpath_p0:
-            actor = R_Actor(ARGS, dummy_env.observation_space, dummy_env.action_space)
-            state_dict = torch.load(ARGS.modelpath_p0)
-            actor.load_state_dict(state_dict)
-            POLICY_P0 = DecentralizedAgent(actor)
-        if ARGS.modelpath_p1:
-            actor = R_Actor(ARGS, dummy_env.observation_space, dummy_env.action_space)
-            state_dict = torch.load(ARGS.modelpath_p1)
-            actor.load_state_dict(state_dict)
-            POLICY_P1 = DecentralizedAgent(actor)
-
-    # TODO: client should pick layout name, instead of server?
-    # currently both client/server pick layout name, and they must match
-    
+def load_models(path: str, ARGS):
     rew_shaping_params = {
         "PLACEMENT_IN_POT_REW": 3,
         "DISH_PICKUP_REWARD": 3,
@@ -213,8 +162,47 @@ if __name__ == '__main__':
         "POT_DISTANCE_REW": 0,
         "SOUP_DISTANCE_REW": 0,
     }
-    MDP = OvercookedGridworld.from_layout_name(layout_name=ARGS.layout_name, rew_shaping_params=rew_shaping_params)
-    MLP = MediumLevelPlanner.from_pickle_or_compute(
-        MDP, NO_COUNTERS_PARAMS, force_compute=False)
+
+    for layout in os.listdir(path):
+        layoutdir = path + "/" + layout
+        if not os.path.isdir(layoutdir):
+            continue
+        translated_name = NAME_TRANSLATION[layout]
+
+        mdp = OvercookedGridworld.from_layout_name(
+            layout_name=translated_name, rew_shaping_params=rew_shaping_params
+        )
+
+        mlp = MediumLevelPlanner.from_pickle_or_compute(
+            mdp, NO_COUNTERS_PARAMS, force_compute=False
+        )
+
+        dummy_env = DecentralizedOvercooked(translated_name)
+
+        layout_algos = {}
+        for algo in os.listdir(layoutdir):
+            splitalgo = algo.split('.')
+            if splitalgo[-1] != 'pt':
+                break
+
+            algopath = layoutdir + "/" + algo
+            actor = R_Actor(ARGS, dummy_env.observation_space, dummy_env.action_space)
+            state_dict = torch.load(algopath)
+            actor.load_state_dict(state_dict)
+            layout_algos[splitalgo[0]] = DecentralizedAgent(actor)
+
+        MLPs[layout] = mlp
+        MDPs[layout] = mdp
+        POLICIES[layout] = layout_algos
+
+
+if __name__ == '__main__':
+    parser = get_config()
+    parser.add_argument('--modelpath', type=str,
+                        help = "folder to load AI player")
+    parser.add_argument('--trajs_savepath', type=str,
+                        help="folder to save trajectories")
+    ARGS = parser.parse_args()
+    load_models(ARGS.modelpath, ARGS)
 
     app.run(debug=True, host='0.0.0.0')

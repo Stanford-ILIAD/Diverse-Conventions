@@ -293,6 +293,8 @@ def get_config():
     parser.add_argument("--han_info", type=int, default=3, help="Number of Hanabi Info Tokens")
     parser.add_argument("--han_life", type=int, default=1, help="Number of Hanabi Life Tokens")
 
+    parser.add_argument("--over_layout", type=str, default="simple", help="Layout to use for Overcooked")
+
     parser.add_argument("--loss_type", type=str, default=None, help="Type of additional loss")
     parser.add_argument("--loss_param", type=float, default=0.2, help="Parameter of Loss")
 

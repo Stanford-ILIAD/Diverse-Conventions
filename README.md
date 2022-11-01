@@ -49,8 +49,9 @@ python tree_cli.py LOAD --partner-load ./Tree/results/standard/[SEED#]/conventio
 
 ## Line Environment
 To train two conventions:
+
 ```
-python serial_trainer.py --num_env_steps 10000 --pop_size 2 --xp_weight 0.1 --mp_weight 0.2 --lr 1e-4 --env_name Line --seed 1
+python serial_trainer.py --num_env_steps 125000 --pop_size 2 --xp_weight 0.15 --mp_weight 0.5 --lr 2.5e-4 --critic_lr 2.5e-4 --episode_length 1250 --use_linear_lr_decay --env_length 2 --env_name Line --seed 1
 ```
 
 There is also an interactive (user agent) program. You can choose between RAND (partner moves randomly), LEFT (partner is biased towards the left to break symmetries), RIGHT (partner is biased towards the right to break symmetries), and LOAD (trained partner). 

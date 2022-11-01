@@ -17,7 +17,7 @@ class PantheonOvercooked(SimultaneousEnv):
         """
         super().__init__()
 
-        DEFAULT_ENV_PARAMS = {"horizon": 400}
+        DEFAULT_ENV_PARAMS = {"horizon": 200}
         rew_shaping_params = {
             "PLACEMENT_IN_POT_REW": 3,
             "DISH_PICKUP_REWARD": 3,

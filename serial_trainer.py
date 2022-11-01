@@ -18,7 +18,7 @@ def generate_gym(args):
         return PantheonLine()
     if args.env_name == "Overcooked":
         args.hanabi_name = "Overcooked"
-        return PantheonOvercooked("simple")
+        return PantheonOvercooked(args.over_layout)
     if args.env_name == "Hanabi":
         han_config = {
             "colors": args.han_colors,
