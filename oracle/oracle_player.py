@@ -34,7 +34,7 @@ class OraclePlayer(MainPlayer):
         if self.model_dir is not None:
             self.restore()
 
-        # algorithm TODO
+        # algorithm
         self.trainer = MAPPO(self.all_args, self.policy, device=self.device)
 
         # buffer
@@ -44,25 +44,45 @@ class OraclePlayer(MainPlayer):
             self.env.observation_space,
             share_observation_space,
             self.env.action_space,
-        ) for _ in range(2)]
+        ) for _ in range(3)]
+
+        self.sp_buf = self.buffers[0]
+        self.xp_buf0 = self.buffers[1]
+        self.xp_buf1 = self.buffers[2]
 
         self.buffer = self.buffers[0]
 
         self.agent_set = agent_set
-        
+
         self.env.partners[0].clear()
+        self.xp_partners = []
         for partner in agent_set:
             pagent = CentralizedAgent(self, 1, partner)
-            self.env.add_partner_agent(pagent, 1)
-        pagent = CentralizedAgent(self, 1)
-        self.env.add_partner_agent(pagent, 1)
+            # self.env.add_partner_agent(pagent, 1)
+            self.xp_partners.append(pagent)
+        # pagent = CentralizedAgent(self, 1)
+        # self.env.add_partner_agent(pagent, 1)
+
+        self.sp_partners = [CentralizedAgent(self, 1)]
+        self.env.set_resample_policy("random")
+
+    def set_sp(self):
+        self.ego_id = 0
+        self.env_ego_id = 0
+        # self.policy.set_sp()
+        self.buffer = self.sp_buf
+
+        self.env.partners[0] = self.sp_partners
+        for partner in self.env.partners[0]:
+            partner.player_id = 1 - self.ego_id
 
     def set_xp(self, ego_id):
         self.ego_id = ego_id
         self.env.ego_ind = ego_id
 
-        self.buffer = self.buffers[ego_id]
+        self.buffer = self.xp_buf0 if ego_id == 0 else self.xp_buf1
 
+        self.env.partners[0] = self.xp_partners
         for partner in self.env.partners[0]:
             partner.player_id = 1 - self.ego_id
 
@@ -78,10 +98,14 @@ class OraclePlayer(MainPlayer):
             # Env algo exp updates ... avg score, avg xp score
             files.append(self.log_dir + "/log.txt")
 
+            # sp.txt
+            # t: episode, Counter
+            files.append(self.log_dir + "/sp.txt")
+
             # xp0.txt, xp1.txt
             # t: episode, Counter
             files.append(self.log_dir + "/xp0.txt")
-            
+
             files.append(self.log_dir + "/xp1.txt")
 
             os.makedirs(self.log_dir, exist_ok=True)
@@ -98,7 +122,7 @@ class OraclePlayer(MainPlayer):
 
             avg0 = np.mean(self.scores0)
             avg1 = np.mean(self.scores1)
-            average_score = (avg0 + avg1) / 2
+            average_score = np.mean(self.sp_scores)
 
             general_log = (
                 f"Updates:{episode}/{episodes},"
@@ -135,16 +159,20 @@ class OraclePlayer(MainPlayer):
 
             files["log.txt"] = general_log
 
+            files["sp.txt"] = get_histogram(self.sp_scores)
+            print("Self-play Scores counts: ", files["sp.txt"])
+
             files["xp0.txt"] = get_histogram(self.scores0)
             files["xp1.txt"] = get_histogram(self.scores1)
             print("Cross-play Scores counts (ego id 0): ", files["xp0.txt"])
             print("Cross-play Scores counts (ego id 1): ", files["xp1.txt"])
-            
+
             for key, val in files.items():
                 with open(f"{self.log_dir}/{key}", "a", encoding="UTF-8") as file:
                     file.write(f"episode:{episode},{val}\n")
 
     def run(self):
+        self.set_sp()
         self.setup_data()
         self.warmup()
 
@@ -158,6 +186,12 @@ class OraclePlayer(MainPlayer):
         self.best_i = None
 
         for episode in range(episodes):
+            if self.use_linear_lr_decay:
+                self.trainer.policy.lr_decay(episode, episodes)
+            self.set_sp()
+            self.collect_episode(turn_based=not self.all_args.simul_env)
+            self.sp_scores = self.scores
+
             self.set_xp(0)
             self.collect_episode(turn_based=not self.all_args.simul_env)
             self.scores0 = self.scores
@@ -168,6 +202,7 @@ class OraclePlayer(MainPlayer):
 
             total_num_steps += self.episode_length
             # post process
+            self.set_sp()
             self.log(train_infos, episode, episodes, total_num_steps, start)
 
             # compute return and update network
@@ -178,12 +213,15 @@ class OraclePlayer(MainPlayer):
     def train(self):
         """Train policies with data in buffer."""
         self.trainer.prep_training()
-        train_infos = self.trainer.train(self.buffers[0], self.buffers[1])
+        train_infos = self.trainer.train(self.buffers[0], self.buffers[1], self.buffers[2], len(self.agent_set))
         for buf in self.buffers:
             buf.reset_after_update()
         return train_infos
 
     def compute_all(self):
+        self.set_sp()
+        self.compute()
+
         self.set_xp(0)
         self.compute()
 

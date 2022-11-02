@@ -281,7 +281,7 @@ class MAPPO:
             train_info["ratio"] += imp_weights.mean().item()
             return actor_loss
 
-    def train(self, xp_buf0, xp_buf1, update_actor=True):
+    def train(self, sp_buf, xp_buf0, xp_buf1, pop_size, update_actor=True):
         """
         Perform a training update using minibatch GD.
         :param buffer: (SharedReplayBuffer) buffer containing training data.
@@ -290,6 +290,7 @@ class MAPPO:
         :return train_info: (dict) contains information regarding training
                 update (e.g. loss, grad norms, etc).
         """
+        sp_adv = self.calc_advantanges(sp_buf)
         xp_adv0 = self.calc_advantanges(xp_buf0)
         xp_adv1 = self.calc_advantanges(xp_buf1)
 
@@ -297,14 +298,20 @@ class MAPPO:
 
         for _ in range(self.ppo_epoch):
             loss = self.train_step(
-                            self.get_partial_gen(xp_buf0, xp_adv0, 0),
+                            self.get_gen(xp_buf0, xp_adv0), # self.get_partial_gen(xp_buf0, xp_adv0, 0),
                             train_info,
                             1,
                             update_actor
                         ) + self.train_step(
-                            self.get_partial_gen(xp_buf1, xp_adv1, 1),
+                            self.get_gen(xp_buf1, xp_adv1),
+                            # self.get_partial_gen(xp_buf1, xp_adv1, 1),
                             train_info,
                             1,
+                            update_actor
+                        ) + self.train_step(
+                            self.get_gen(sp_buf, sp_adv),
+                            train_info,
+                            2.0 / pop_size,
                             update_actor
                         )
 

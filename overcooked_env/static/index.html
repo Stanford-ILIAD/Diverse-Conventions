@@ -22,61 +22,159 @@
     <link rel="stylesheet" href="static/css/style.css" type="text/css" />
   </head>
   <body>
-    <form>
-      <div class="container">
-      <div class="row text-center">
-	<div class="form-group col-lg-3">
-	  <label for="playerZero" style="color:#1E6A9E">Player 1</label>
-	  <select class="form-control" id="playerZero">
-	    <option value="ai">AI agent</option>
-	    <option value="human">Human Keyboard Input</option>
-	  </select>
-	</div>
-  <div class="form-group col-lg-3">
-    <label for="playerOne" style="color:#44956B">Player 2</label>
-    <select class="form-control" id="playerOne">
-	    <option value="ai">AI agent</option>
-	    <option value="human">Human Keyboard Input</option>
-    </select>
-  </div>
-	<div class="form-group col-lg-2">
-	  <label for="layout">Layout</label>
-	  <select class="form-control" id="layout">
-	    <option value="cramped_room">Cramped Room (simple)</option>
-	    <option value="asymmetric_advantages">Asymmetric Advantages (unident_s)</option>
-	    <option value="coordination_ring">Coordination Ring (random1)</option>
-	    <option value="forced_coordination">Forced Coordination (random0)</option>
-	    <option value="counter_circuit">Counter Circuit (random3)</option>
-	  </select>
-	</div>
-  <div class="form-group col-lg-2">
-    <label for="gameTime">Game Length (sec)</label>
-    <input type="number" id="gameTime" value="40" min="1" max="1800">
-  </div>
-	<div class="form-group col-lg-2">
-	  <label for="algo">Algo</label>
-	  <select class="form-control" id="algo">
-	    <option value="SP">algo0</option>
-	    <option value="MP">algo1</option>
-	    <option value="ADAP">algo2</option>
-	    <option value="XP">algo3</option>
-	  </select>
-	</div>
-  <!-- <div class="form-group col-lg-2">
-    <label for="layout">Deterministic?</label>
-    <input type="checkbox" id="deterministic" name="deterministic">
-  </div> -->
-  <!-- <div class="form-group col-lg-2">
-    <label for="layout">Automatically Save Game Trajectories?</label>
-    <input type="checkbox" id="saveTrajectories" name="saveTrajectories">
-  </div> -->
+    <div class='container' style="padding-top: 100px;">
+        <h3>Instructions</h3>
+        <p>
+            In this task you will be playing a web-based game of Overcooked with 5 different AI agents. You will play with each agent TWICE for each environment. <br>
+            The five agents will be shown in the "Algo" dropdown menu. Simply select one of them and press enter, and a game will begin. <br>
+            Each game will last 40 seconds. Your goal is to score as many points as you can.<br>
+            <br>
+            You will use Arrow keys to move your agent (the blue chef), and Space bar to interact with objects.<br>
+            To score points, you and the AI agent will need to place 3 onions in the stove, wait for the red ticker to tick to 20, and then put<br>
+            the cooked onions on a plate and serve it to the grey square.<br>
+            It's much easier to understand the game by watching <a href='https://drive.google.com/file/d/1hfcgIWDA6lWFw3cNTyiW3vKDksj9u_qd/view' target="_blank">this video</a>. (If the video doesn't play, you may have to allow third-party cookies.)<br>
+            You will score 20 points after you successfully serve dish. Try to serve as many dishes as you can!<br>
+            <br>
+            After each game ends you will see a reminder of how many games you still need to play with each agent.<br>
+            <b>Please play with the agents in the order of the dropdown menu!<br>
+            After you have played TWO games with each agent, the Prolific completion code will be shown to you.<br></b>
+            <br>
+            Unfortunately there will be lag due to network latency. That is to be expected.<br>
+            <!-- <b>If you repeatedly score 0 points your submission may be rejected. If you score 40 points often enough you may receive a bonus payment.</b> --><br>
+            Good luck and have fun!<br>
+            
+        </p>
+        
+        <h3>Check your understanding</h3>
+        <ol>
+        <li>I have read the instructions and watched the intro video.<br />
+          <input type="radio" name="q0" id="q0_option1" value="q0_option1" onclick="checkAnswers()" />
+          <label for="q0_option1">Yes.</label><br>
+          <input type="radio" name="q0" id="q0_option2" value="q0_option2" onclick="checkAnswers()" />
+          <label for="q0_option2">No.</label><br>
+        </li>
+        <li>Which of the following is true?<br />
+          <input type="radio" name="q1" id="q1_option1" value="q1_option1" onclick="checkAnswers()" />
+          <label for="q1_option1">Arrow keys to move my agent, Space bar to interact with objects.</label><br>
+          <input type="radio" name="q1" id="q1_option2" value="q1_option2" onclick="checkAnswers()" />
+          <label for="q1_option2">Mouse to move my agent, Enter to interact with objects.</label><br>
+        </li>
+        <li>Which of the following is true?<br />
+          <input type="radio" name="q2" id="q2_option1" value="q2_option1" onclick="checkAnswers()" />
+          <label for="q2_option1">I have to play with each algo once. I have to use the dropdown menu to select the agent I am playing with.</label><br>
+          <input type="radio" name="q2" id="q2_option2" value="q2_option2" onclick="checkAnswers()" />
+          <label for="q2_option2">I have to play with each algo twice. I have to use the dropdown menu to select the agent I am playing with.</label><br>
+          <input type="radio" name="q2" id="q2_option3" value="q2_option3" onclick="checkAnswers()" />
+          <label for="q2_option3">I have to play with each algo three times. I have to use the dropdown menu to select the agent I am playing with.</label><br>
+        </li>
+        </ol>
+        <br />
+        <center><form action="javascript:reveal()" method="GET">
+            Correctly answer the questions above to activate the start button.<br />Please enter your Prolific ID.<br />
+            <input type="hidden" name="env" value="fetch" />
+            <input type="hidden" name="agent" value="combined" />
+            Prolific ID: <input type="text" name="prolificID" id="prolificID" disabled /><br>
+            <input type="submit" value="Start" id="startButton" disabled />
+        </form></center>
+    </div>
+
+    <script>
+    function checkAnswers() {
+        if (document.getElementById('q0_option1').checked && document.getElementById('q1_option1').checked && document.getElementById('q2_option2').checked) {
+            document.getElementById('prolificID').disabled = false;
+            document.getElementById('startButton').disabled = false;
+        }
+        else {
+            document.getElementById('prolificID').value = "";
+            document.getElementById('prolificID').disabled = true;
+            document.getElementById('startButton').disabled = true;
+        }
+    }
+    function reveal() {
+        if (document.getElementById('prolificID').value != "") {
+            document.getElementById('q0_option1').disabled = true;
+            document.getElementById('q0_option2').disabled = true;
+            document.getElementById('q1_option1').disabled = true;
+            document.getElementById('q1_option2').disabled = true;
+            document.getElementById('q2_option1').disabled = true;
+            document.getElementById('q2_option2').disabled = true;
+            document.getElementById('q2_option3').disabled = true;
+
+            document.getElementById('prolificID').disabled = true;
+            document.getElementById('startButton').disabled = true;
+            document.getElementById('maindiv').style.display = 'initial';
+            
+            
+            var algoform = document.getElementById('algo');
+            for (var i = algoform.children.length; i >= 0; i--) {
+                algoform.appendChild(algoform.children[Math.random() * i | 0]);
+            }
+            algoform.selectedIndex = 0;
+        }
+    }
+    </script>
+
+
+    <div id='maindiv' style="display: none;">
+      <form>
+	<div class="container">
+	  <div class="row text-center">
+	    <div class="form-group col-lg-3">
+	      <label for="playerZero" style="color:#1E6A9E">Player 1</label>
+	      <select class="form-control" id="playerZero">
+		<option value="ai">AI agent</option>
+		<option value="human">Human Keyboard Input</option>
+	      </select>
+	    </div>
+	    <div class="form-group col-lg-3">
+	      <label for="playerOne" style="color:#44956B">Player 2</label>
+	      <select class="form-control" id="playerOne" disabled>
+		<option value="ai">AI agent</option>
+		<option value="human">Human Keyboard Input</option>
+	      </select>
+	    </div>
+	    <div class="form-group col-lg-2">
+	      <label for="layout">Layout</label>
+	      <select class="form-control" id="layout">
+		<option value="cramped_room">Cramped Room (simple)</option>
+		<!-- <option value="asymmetric_advantages">Asymmetric Advantages (unident_s)</option> -->
+		<option value="coordination_ring">Coordination Ring (random1)</option>
+		<!-- <option value="forced_coordination">Forced Coordination (random0)</option> -->
+		<!-- <option value="counter_circuit">Counter Circuit (random3)</option> -->
+	      </select>
+	    </div>
+	    <div class="form-group col-lg-2">
+	      <label for="gameTime">Game Length (sec)</label>
+	      <input type="number" id="gameTime" value="40" min="1" max="1800" disabled>
+	    </div>
+	    <div class="form-group col-lg-2">
+	      <label for="algo">Algo</label>
+	      <select class="form-control" id="algo">
+		<option value="BLANK">No AI</option>
+		<option value="SP">algo0(SP)</option>
+		<option value="MP">algo1(MP)</option>
+		<option value="ADAP">algo2(ADAP)</option>
+		<option value="XP">algo3(XP)</option>
+	      </select>
+	    </div>
+	    <!-- <div class="form-group col-lg-2">
+		 <label for="layout">Deterministic?</label>
+		 <input type="checkbox" id="deterministic" name="deterministic">
+	    </div> -->
+	    <!-- <div class="form-group col-lg-2">
+		 <label for="layout">Automatically Save Game Trajectories?</label>
+		 <input type="checkbox" id="saveTrajectories" name="saveTrajectories">
+	    </div> -->
   
-      </div>
-      </div>
-    </form>
-    <!-- <h4 class="text-center"><a href="./instructions">Instructions</a></h4><h4 class="text-center"><a href="./replay">Replay Trajectories</a></h4>  -->
-    <div id="overcooked" class="text-center"></div>
-    <div id="control" class="text-center"></div>
+	  </div>
+	</div>
+      </form>
+      <!-- <h4 class="text-center"><a href="./instructions">Instructions</a></h4><h4 class="text-center"><a href="./replay">Replay Trajectories</a></h4>  -->
+      <div id="overcooked" class="text-center"></div>
+      <div id="control" class="text-center"></div>
+      <div id="record" class="text-center"></div>
+    </div>
+    <div style="padding: 100px;"></div>
 
     <noscript>
       <h1>Warning: Javascript seems to be disabled</h1>

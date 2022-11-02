@@ -26,10 +26,41 @@ MLPs = {}
 MDPs = {}
 POLICIES = {}
 
+LAYOUTS = ["cramped_room", "coordination_ring"]
+ALGOS = ["SP", "MP", "ADAP", "XP"]
+ALGO_NAMES = ["algo0", "algo1", "algo2", "algo3"]
+NUM_EXP_PER = 2
+CODE = 0
+
+def get_user_status(prolific_id, ip_addr):
+    stringtoret = ""
+    done = True
+    for layout in LAYOUTS:
+        for i in range(len(ALGOS)):
+            algo = ALGOS[i]
+            folder = f"{ARGS.trajs_savepath}/{layout}/{algo}/{prolific_id}/{ip_addr}"
+            os.makedirs(folder, exist_ok=True)
+
+            cur_entries = os.listdir(folder)
+            num_games = 0
+            for entry in cur_entries:
+                splitentry = entry.split('.')
+                if splitentry[-1] == 'json':
+                    num_games += 1
+
+            out_string = ""
+            if num_games < NUM_EXP_PER:
+                done = False
+                out_string = f"Please play {NUM_EXP_PER - num_games} more games with \"{ALGO_NAMES[i]}\" in {layout}.<br />"
+            else:
+                out_string = f"All done for \"{ALGO_NAMES[i]}\" in {layout}!<br />"
+            stringtoret += out_string
+    return {'status': done, 'code': CODE, 'record': stringtoret}
+
 
 def get_prediction(s, policy):
     s = torch.tensor(s).unsqueeze(0).float()
-    actions = policy.predict(observation=s)
+    actions = policy.predict(observation=s, record=False, deterministic=False)
     return int(actions[0])
 
 
@@ -101,6 +132,8 @@ def predict():
         data_json = json.loads(request.data)
         state_dict, player_id_dict, server_layout_name, algo, timestep = data_json["state"], data_json[
             "npc_index"], data_json["layout_name"], data_json["algo"], data_json["timestep"]
+        if algo == "BLANK":
+            return jsonify({'action': 4})
         player_id = int(player_id_dict)
         s_all = process_state(state_dict, server_layout_name)
         policy = POLICIES[server_layout_name][algo]
@@ -110,15 +143,17 @@ def predict():
 
 @app.route('/updatemodel', methods=['POST'])
 def updatemodel():
+    ip_addr = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
     if request.method == 'POST':
         data_json = json.loads(request.data)
+        prolific_id = data_json["prolific_id"]
         traj_dict, traj_id, layout_name, algo = data_json["traj"], data_json[
             "traj_id"], data_json["layout_name"], data_json["algo"]
         print(traj_id)
 
         if ARGS.trajs_savepath:
             # Save trajectory (save this to keep reward information)
-            folder = f"{ARGS.trajs_savepath}/{layout_name}/{algo}"
+            folder = f"{ARGS.trajs_savepath}/{layout_name}/{algo}/{prolific_id}/{ip_addr}"
             os.makedirs(folder, exist_ok=True)
 
             cur_entries = os.listdir(folder)
@@ -142,6 +177,7 @@ def updatemodel():
             simultaneous_transitions = convert_traj_to_simultaneous_transitions(
                 traj_dict, layout_name)
             simultaneous_transitions.write_transition(savepath)
+            return jsonify(get_user_status(prolific_id, ip_addr))
 
         # Finetune model: todo
 

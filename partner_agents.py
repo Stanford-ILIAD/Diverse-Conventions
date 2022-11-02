@@ -91,8 +91,8 @@ class DecentralizedAgent(Agent):
         values, _ = self.critic(obs, self.rnn_states, self.masks)
         return _t2n(values)
 
-    def predict(self, observation):
-        return self.get_action((observation, None))
+    def predict(self, observation, record=True, deterministic=True):
+        return self.get_action((observation, None), record, deterministic)
 
     def update(self, reward, done):
         pass
