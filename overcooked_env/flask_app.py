@@ -27,8 +27,8 @@ MDPs = {}
 POLICIES = {}
 
 LAYOUTS = ["cramped_room", "coordination_ring"]
-ALGOS = ["SP", "MP", "ADAP", "XP"]
-ALGO_NAMES = ["algo0", "algo1", "algo2", "algo3"]
+ALGOS = ["BLANK", "SP", "MP", "ADAP", "XP"]
+ALGO_NAMES = ["No AI", "algo0", "algo1", "algo2", "algo3"]
 NUM_EXP_PER = 2
 CODE = 0
 

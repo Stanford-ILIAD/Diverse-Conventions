@@ -25,7 +25,7 @@
     <div class='container' style="padding-top: 100px;">
         <h3>Instructions</h3>
         <p>
-            In this task you will be playing a web-based game of Overcooked with 5 different AI agents. You will play with each agent TWICE for each environment. <br>
+            In this task you will be playing a web-based game of Overcooked with 4 different AI agents (and a single-player version to get familiarized with the task). You will play with <b>each agent TWICE for each environment</b>. <br>
             The five agents will be shown in the "Algo" dropdown menu. Simply select one of them and press enter, and a game will begin. <br>
             Each game will last 40 seconds. Your goal is to score as many points as you can.<br>
             <br>
@@ -33,11 +33,13 @@
             To score points, you and the AI agent will need to place 3 onions in the stove, wait for the red ticker to tick to 20, and then put<br>
             the cooked onions on a plate and serve it to the grey square.<br>
             It's much easier to understand the game by watching <a href='https://drive.google.com/file/d/1hfcgIWDA6lWFw3cNTyiW3vKDksj9u_qd/view' target="_blank">this video</a>. (If the video doesn't play, you may have to allow third-party cookies.)<br>
-            You will score 20 points after you successfully serve dish. Try to serve as many dishes as you can!<br>
+            You will score 20 points after you successfully serve a dish. Try to serve as many dishes as you can!<br>
             <br>
             After each game ends you will see a reminder of how many games you still need to play with each agent.<br>
-            <b>Please play with the agents in the order of the dropdown menu!<br>
-            After you have played TWO games with each agent, the Prolific completion code will be shown to you.<br></b>
+            <b>Please play with the agents in the order of the dropdown menu!</b><br>
+
+	      <p>After completing 2 games with an agent on a specific layout, <b> please fill out <a href="https://forms.gle/9jXt8zacHVsjjwsu7" target="_blank" rel="noopener noreferrer">this Google form</a> </b> and sign in with your Stanford email. In total, there are 8 sections in the form since there are 2 layouts and 4 AI agents (algo0 to algo3). Note that you should still play 2 games on each layout with the "No AI" algo selected to familiarize yourself with the environment, but we will not be asking for responses on those sections in the form.</p>
+            <!-- After you have played TWO games with each agent, the Prolific completion code will be shown to you.<br> -->
             <br>
             Unfortunately there will be lag due to network latency. That is to be expected.<br>
             <!-- <b>If you repeatedly score 0 points your submission may be rejected. If you score 40 points often enough you may receive a bonus payment.</b> --><br>
@@ -52,6 +54,12 @@
           <label for="q0_option1">Yes.</label><br>
           <input type="radio" name="q0" id="q0_option2" value="q0_option2" onclick="checkAnswers()" />
           <label for="q0_option2">No.</label><br>
+        </li>
+	<li>I have the Google form open in another tab or window, and I will fill out the corresponding section after playing 2 games in a particular configuration<br />
+          <input type="radio" name="g0" id="g0_option1" value="g0_option1" onclick="checkAnswers()" />
+          <label for="g0_option1">Yes.</label><br>
+          <input type="radio" name="g0" id="g0_option2" value="g0_option2" onclick="checkAnswers()" />
+          <label for="g0_option2">No.</label><br>
         </li>
         <li>Which of the following is true?<br />
           <input type="radio" name="q1" id="q1_option1" value="q1_option1" onclick="checkAnswers()" />
@@ -70,17 +78,18 @@
         </ol>
         <br />
         <center><form action="javascript:reveal()" method="GET">
-            Correctly answer the questions above to activate the start button.<br />Please enter your Prolific ID.<br />
+            Correctly answer the questions above to activate the start button.<br />Please enter your SUNET ID (first part of your stanford email).<br />
             <input type="hidden" name="env" value="fetch" />
             <input type="hidden" name="agent" value="combined" />
-            Prolific ID: <input type="text" name="prolificID" id="prolificID" disabled /><br>
+            SUNET ID: <input type="text" name="prolificID" id="prolificID" disabled /><br>
             <input type="submit" value="Start" id="startButton" disabled />
         </form></center>
     </div>
 
     <script>
+      window.onload = checkAnswers();
     function checkAnswers() {
-        if (document.getElementById('q0_option1').checked && document.getElementById('q1_option1').checked && document.getElementById('q2_option2').checked) {
+        if (document.getElementById('q0_option1').checked && document.getElementById('g0_option1').checked && document.getElementById('q1_option1').checked && document.getElementById('q2_option2').checked) {
             document.getElementById('prolificID').disabled = false;
             document.getElementById('startButton').disabled = false;
         }
@@ -94,6 +103,8 @@
         if (document.getElementById('prolificID').value != "") {
             document.getElementById('q0_option1').disabled = true;
             document.getElementById('q0_option2').disabled = true;
+            document.getElementById('g0_option1').disabled = true;
+            document.getElementById('g0_option2').disabled = true;
             document.getElementById('q1_option1').disabled = true;
             document.getElementById('q1_option2').disabled = true;
             document.getElementById('q2_option1').disabled = true;
@@ -106,8 +117,8 @@
             
             
             var algoform = document.getElementById('algo');
-            for (var i = algoform.children.length; i >= 0; i--) {
-                algoform.appendChild(algoform.children[Math.random() * i | 0]);
+            for (var i = algoform.children.length; i >= 1; i--) {
+                algoform.appendChild(algoform.children[Math.random() * i | 1]);
             }
             algoform.selectedIndex = 0;
         }
@@ -121,9 +132,9 @@
 	  <div class="row text-center">
 	    <div class="form-group col-lg-3">
 	      <label for="playerZero" style="color:#1E6A9E">Player 1</label>
-	      <select class="form-control" id="playerZero">
-		<option value="ai">AI agent</option>
+	      <select class="form-control" id="playerZero" disabled>
 		<option value="human">Human Keyboard Input</option>
+		<option value="ai">AI agent</option>
 	      </select>
 	    </div>
 	    <div class="form-group col-lg-3">
@@ -151,10 +162,10 @@
 	      <label for="algo">Algo</label>
 	      <select class="form-control" id="algo">
 		<option value="BLANK">No AI</option>
-		<option value="SP">algo0(SP)</option>
-		<option value="MP">algo1(MP)</option>
-		<option value="ADAP">algo2(ADAP)</option>
-		<option value="XP">algo3(XP)</option>
+		<option value="SP">algo0<!-- (SP) --></option>
+		<option value="MP">algo1<!-- (MP) --></option>
+		<option value="ADAP">algo2<!-- (ADAP) --></option>
+		<option value="XP">algo3<!-- (XP) --></option>
 	      </select>
 	    </div>
 	    <!-- <div class="form-group col-lg-2">
