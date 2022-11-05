@@ -1,4 +1,4 @@
-from itertools import combinations
+from itertools import permutations
 
 import torch as th
 from torch.distributions import kl, Categorical
@@ -28,6 +28,6 @@ class ADAPLoss(PopulationLoss):
                                                     active_masks_batch)
             all_action_dists.append(action_logits)
         all_CLs = [th.mean(th.exp(-kl.kl_divergence(a, b)))
-                   for a, b in combinations(all_action_dists, 2)]
+                   for a, b in permutations(all_action_dists, 2)]
         rawans = sum(all_CLs)/len(all_CLs)
         return rawans * self.losscoef
