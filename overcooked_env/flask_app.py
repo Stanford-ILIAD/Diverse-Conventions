@@ -28,15 +28,27 @@ POLICIES = {}
 
 LAYOUTS = ["cramped_room", "coordination_ring"]
 ALGOS = ["BLANK", "SP", "MP", "ADAP", "XP"]
-ALGO_NAMES = ["No AI", "algo0", "algo1", "algo2", "algo3"]
+ALGO_NAMES = ["No AI", "AI S", "AI M", "AI D", "AI X"]
+op_to_ind = {
+    "No AI": 0,
+    "AI S": 1,
+    "AI M": 2,
+    "AI D": 3,
+    "AI X": 4
+}
 NUM_EXP_PER = 2
 CODE = 0
 
-def get_user_status(prolific_id, ip_addr):
+
+def get_user_status(prolific_id, ip_addr, options, curalgo=None, curlayout=None):
     stringtoret = ""
     done = True
+    bolded = False
+    next_algo = options[0]
+    next_layout = LAYOUTS[0]
     for layout in LAYOUTS:
-        for i in range(len(ALGOS)):
+        for algname in options:
+            i = op_to_ind[algname]
             algo = ALGOS[i]
             folder = f"{ARGS.trajs_savepath}/{layout}/{algo}/{prolific_id}/{ip_addr}"
             os.makedirs(folder, exist_ok=True)
@@ -52,10 +64,19 @@ def get_user_status(prolific_id, ip_addr):
             if num_games < NUM_EXP_PER:
                 done = False
                 out_string = f"Please play {NUM_EXP_PER - num_games} more games with \"{ALGO_NAMES[i]}\" in {layout}.<br />"
+                if not bolded:
+                    out_string = "<b>" + out_string + "</b>"
+                    next_algo = algo
+                    next_layout = layout
+                    bolded = True
             else:
-                out_string = f"All done for \"{ALGO_NAMES[i]}\" in {layout}!<br />"
+                if curalgo is not None and curlayout is not None and i != 0 and algo == curalgo and layout == curlayout:
+                    out_string = f"All done for \"{ALGO_NAMES[i]}\" in {layout}! <b>Please fill out <a href=\"https://forms.gle/9jXt8zacHVsjjwsu7\" target=\"_blank\" rel=\"noopener noreferrer\">this Google form</a></b><br />"
+                else:
+                    # print(curalgo, curlayout, i, layout)
+                    out_string = f"All done for \"{ALGO_NAMES[i]}\" in {layout}!<br />"
             stringtoret += out_string
-    return {'status': done, 'code': CODE, 'record': stringtoret}
+    return {'status': done, 'code': CODE, 'record': stringtoret, 'nextalgo': next_algo, 'nextlayout': next_layout}
 
 
 def get_prediction(s, policy):
@@ -126,6 +147,21 @@ def convert_traj_to_simultaneous_transitions(traj_dict, layout_name):
         )
 
 
+@app.route('/initrecord', methods=['POST'])
+def initrecord():
+    ip_addr = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    if request.method == 'POST':
+        data_json = json.loads(request.data)
+        prolific_id = data_json["prolific_id"]
+        algo_options = data_json["algo_options"]
+        # print(prolific_id)
+
+        if ARGS.trajs_savepath:
+            return jsonify(get_user_status(prolific_id, ip_addr, algo_options))
+
+        return jsonify({'status': True})
+
+
 @app.route('/predict', methods=['POST'])
 def predict():
     if request.method == 'POST':
@@ -147,9 +183,9 @@ def updatemodel():
     if request.method == 'POST':
         data_json = json.loads(request.data)
         prolific_id = data_json["prolific_id"]
-        traj_dict, traj_id, layout_name, algo = data_json["traj"], data_json[
-            "traj_id"], data_json["layout_name"], data_json["algo"]
-        print(traj_id)
+        traj_dict, traj_id, layout_name, algo, algo_options = data_json["traj"], data_json[
+            "traj_id"], data_json["layout_name"], data_json["algo"], data_json["algo_options"]
+        print(traj_id, prolific_id)
 
         if ARGS.trajs_savepath:
             # Save trajectory (save this to keep reward information)
@@ -177,7 +213,7 @@ def updatemodel():
             simultaneous_transitions = convert_traj_to_simultaneous_transitions(
                 traj_dict, layout_name)
             simultaneous_transitions.write_transition(savepath)
-            return jsonify(get_user_status(prolific_id, ip_addr))
+            return jsonify(get_user_status(prolific_id, ip_addr, algo_options, algo, layout_name))
 
         # Finetune model: todo
 
@@ -235,7 +271,7 @@ def load_models(path: str, ARGS):
 if __name__ == '__main__':
     parser = get_config()
     parser.add_argument('--modelpath', type=str,
-                        help = "folder to load AI player")
+                        help="folder to load AI player")
     parser.add_argument('--trajs_savepath', type=str,
                         help="folder to save trajectories")
     ARGS = parser.parse_args()
