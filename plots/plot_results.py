@@ -83,7 +83,7 @@ def make_plot(convention, data, score_set):
     # print(ydata_min)
 
     # print(ydata_mean)
-    
+
     # print(ydata_max)
     # print("-" * 50)
     plt.clf()
