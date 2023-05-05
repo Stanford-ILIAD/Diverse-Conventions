@@ -108,8 +108,6 @@
       <!-- <p>After completing 2 games with an agent on a specific layout, <b> please fill out <a href="https://forms.gle/9jXt8zacHVsjjwsu7" target="_blank" rel="noopener noreferrer">this Google form</a> </b> and sign in with your Stanford email. In total, there are 8 sections in the form since there are 2 layouts and 4 AI agents (algo0 to algo3). Note that you should still play 2 games on each layout with the "No AI" algo selected to familiarize yourself with the environment, but we will not be asking for responses on those sections in the form.</p> -->
       <!-- After you have played TWO games with each agent, the Prolific completion code will be shown to you.<br> -->
       <p>
-      <br>
-      Unfortunately there will be lag due to network latency. That is to be expected.<br>
       <!-- <b>If you repeatedly score 0 points your submission may be rejected. If you score 40 points often enough you may receive a bonus payment.</b> --><br>
       Good luck and have fun!<br>
       
@@ -200,7 +198,13 @@
 
       function blurAlgo() {
 	  document.getElementById('algo').blur();
-      }
+        }
+
+        window.addEventListener("keydown", function(e) {
+        if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+        e.preventDefault();
+        }
+        }, false);
       
     </script>
 

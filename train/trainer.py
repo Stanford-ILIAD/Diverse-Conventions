@@ -4,25 +4,25 @@ from config import get_config
 import os
 from pathlib import Path
 
-from env_utils import generate_env
+from env_utils import generate_env, set_seed
 
 from partner_agents import CentralizedAgent
 
 import torch
 
 args = get_config().parse_args()
-
 device = 'cuda' if torch.cuda.is_available() and args.cuda else 'cpu'
 
+set_seed(args.seed, args.cuda_deterministic)
 envs = generate_env(args.env_name, args.n_rollout_threads, args.over_layout, use_env_cpu=(device=='cpu'))
 
 args.hanabi_name = args.over_layout if args.env_name == 'overcooked' else args.env_name
 
 run_dir = (
         os.path.dirname(os.path.abspath(__file__))
-        + "/"
-        + args.hanabi_name
         + "/results/"
+        + args.hanabi_name
+        + "/"
         + (args.run_dir)
         + "/"
         + str(args.seed)
@@ -37,6 +37,7 @@ config = {
     'num_agents': 2,
     'run_dir': Path(run_dir)
 }
+
 ego = MainPlayer(config)
 partner = CentralizedAgent(ego, 1)
 envs.add_partner_agent(partner)

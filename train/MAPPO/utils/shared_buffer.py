@@ -8,7 +8,7 @@ def _flatten(T, N, x):
 
 
 def _cast(x):
-    return x.transpose(1, 2, 0, 3).reshape(-1, *x.shape[3:])
+    return x.permute(1, 2, 0, 3).reshape(-1, *x.shape[3:])
 
 
 class SharedReplayBuffer(object):
@@ -406,8 +406,8 @@ class SharedReplayBuffer(object):
         sampler = [rand[i * mini_batch_size:(i + 1) * mini_batch_size] for i in range(num_mini_batch)]
 
         if len(self.share_obs.shape) > 4:
-            share_obs = self.share_obs[:-1].transpose(1, 2, 0, 3, 4, 5).reshape(-1, *self.share_obs.shape[3:])
-            obs = self.obs[:-1].transpose(1, 2, 0, 3, 4, 5).reshape(-1, *self.obs.shape[3:])
+            share_obs = self.share_obs[:-1].permute(1, 2, 0, 3, 4, 5).reshape(-1, *self.share_obs.shape[3:])
+            obs = self.obs[:-1].permute(1, 2, 0, 3, 4, 5).reshape(-1, *self.obs.shape[3:])
         else:
             share_obs = _cast(self.share_obs[:-1])
             obs = _cast(self.obs[:-1])
@@ -421,8 +421,8 @@ class SharedReplayBuffer(object):
         active_masks = _cast(self.active_masks[:-1])
         # rnn_states = _cast(self.rnn_states[:-1])
         # rnn_states_critic = _cast(self.rnn_states_critic[:-1])
-        rnn_states = self.rnn_states[:-1].transpose(1, 2, 0, 3, 4).reshape(-1, *self.rnn_states.shape[3:])
-        rnn_states_critic = self.rnn_states_critic[:-1].transpose(1, 2, 0, 3, 4).reshape(-1,
+        rnn_states = self.rnn_states[:-1].permute(1, 2, 0, 3, 4).reshape(-1, *self.rnn_states.shape[3:])
+        rnn_states_critic = self.rnn_states_critic[:-1].permute(1, 2, 0, 3, 4).reshape(-1,
                                                                                          *self.rnn_states_critic.shape[
                                                                                           3:])
 

@@ -44,9 +44,9 @@ args.hanabi_name = args.over_layout if args.env_name == 'overcooked' else args.e
 
 run_dir = (
         os.path.dirname(os.path.abspath(__file__))
-        + "/"
-        + args.hanabi_name
         + "/results/"
+        + args.hanabi_name
+        + "/"
         + (args.run_dir)
         + "/"
         + str(args.seed)
