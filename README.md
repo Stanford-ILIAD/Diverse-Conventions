@@ -1,6 +1,6 @@
-# Madrona RL Environments
+# CoMeDi
 
-Implementation of various RL Environments in Madrona
+Implementation of CoMeDi algorithm with GPU acceleration
 
 ## Requirements
 
@@ -22,7 +22,7 @@ miniconda3/bin/conda init bash
 ```
 conda create -n CoMeDi python=3.10
 conda activate CoMeDi
-pip install torch numpy tensorboard
+pip install torch numpy
 
 git clone https://github.com/bsarkar321/CoMeDi
 cd CoMeDi
@@ -50,5 +50,11 @@ Training MAPPO on overcooked:
 MADRONA_MWGPU_KERNEL_CACHE=/tmp/simplecookedcache python trainer.py --num_env_steps 10000000 --pop_size 1 --episode_length 200 --env_length 200 --env_name overcooked --seed 1 --over_layout simple --run_dir simple_sp --restored 0 --n_rollout_threads 500 --ppo_epoch 5 --cuda --layer_N 2 --hidden_size 64 --lr 1e-2 --critic_lr 1e-2
 
 MADRONA_MWGPU_KERNEL_CACHE=/tmp/simplecookedcache python trainer.py --num_env_steps 10000000 --pop_size 1 --episode_length 200 --env_length 200 --env_name overcooked --seed 1 --over_layout random1 --run_dir coord_sp --restored 0 --n_rollout_threads 500 --ppo_epoch 5 --cuda --layer_N 2 --hidden_size 64 --lr 1e-2 --critic_lr 1e-2
+```
+
+Convert to flask representation
+
+``` shell
+MADRONA_MWGPU_KERNEL_CACHE=/tmp/simplecookedcache python torch_to_tfjs.py --env_name overcooked --seed 1 --n_rollout_threads 1 --layer_N 2 --hidden_size 64 --over_layout simple --run_dir simple_sp --ai_name AI_S
 ```
 
