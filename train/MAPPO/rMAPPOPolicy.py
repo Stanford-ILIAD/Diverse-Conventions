@@ -125,3 +125,8 @@ class R_MAPPOPolicy:
         """
         actions, _, rnn_states_actor = self.actor(obs, rnn_states_actor, masks, available_actions, deterministic)
         return actions, rnn_states_actor
+
+class rMAPPOWrapper(R_MAPPOPolicy):
+    def __init__(self, actor, critic):
+        self.actor = actor
+        self.critic = critic

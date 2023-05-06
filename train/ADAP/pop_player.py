@@ -8,7 +8,7 @@ class PopPlayer:
         self.players = players
 
         policies = [player.policy for player in players]
-        self.trainer = Pop_MAPPO(args, policies, pop_loss, popsize=len(players))
+        self.trainer = Pop_MAPPO(args, policies, pop_loss, device=players[0].device, popsize=len(players))
         self.pop_loss = pop_loss
 
     def run(self):
@@ -18,7 +18,7 @@ class PopPlayer:
 
         start = time.time()
         episodes = (
-            int(self.num_env_steps) // self.episode_length // self.n_rollout_threads
+            int(self.players[0].num_env_steps) // self.players[0].episode_length // self.players[0].n_rollout_threads
         )
         train_infos = [None] * len(self.players)
         total_num_steps = [0] * len(self.players)
@@ -30,7 +30,7 @@ class PopPlayer:
             print("END POOL")
 
             for idx, player in enumerate(self.players):
-                total_num_steps[idx] += player.episode_length
+                total_num_steps[idx] += player.episode_length * player.n_rollout_threads
 
                 print(f"Player {idx}")
                 # post process

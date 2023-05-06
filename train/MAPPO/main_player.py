@@ -90,7 +90,7 @@ class MainPlayer:
 
     def collect_episode(self, buffer=None, length=None, save_scores=True):
         buffer = buffer or self.buffer
-        self.running_score = torch.zeros((self.n_rollout_threads), device=self.device)
+        self.running_score = torch.zeros((self.envs.num_envs), device=self.device)
         if length is None:
             length = self.episode_length
         if save_scores:
@@ -261,18 +261,18 @@ class MainPlayer:
             self.running_score[dones] = 0
 
     def setup_data(self):
-        self.turn_obs = torch.zeros((self.n_rollout_threads,*self.buffer.obs.shape[2:]), dtype=torch.float, device=self.device)
-        self.turn_share_obs = torch.zeros((self.n_rollout_threads,*self.buffer.share_obs.shape[2:]), dtype=torch.float, device=self.device)
-        self.turn_available_actions = torch.zeros((self.n_rollout_threads,*self.buffer.available_actions.shape[2:]), dtype=torch.float, device=self.device)
-        self.turn_values = torch.zeros((self.n_rollout_threads,*self.buffer.value_preds.shape[2:]), dtype=torch.float, device=self.device)
-        self.turn_actions = torch.zeros((self.n_rollout_threads,*self.buffer.actions.shape[2:]), dtype=torch.float, device=self.device)
-        self.turn_action_log_probs = torch.zeros((self.n_rollout_threads,*self.buffer.action_log_probs.shape[2:]), dtype=torch.float, device=self.device)
-        self.turn_rnn_states = torch.zeros((self.n_rollout_threads,*self.buffer.rnn_states.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_obs = torch.zeros((self.envs.num_envs,*self.buffer.obs.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_share_obs = torch.zeros((self.envs.num_envs,*self.buffer.share_obs.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_available_actions = torch.zeros((self.envs.num_envs,*self.buffer.available_actions.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_values = torch.zeros((self.envs.num_envs,*self.buffer.value_preds.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_actions = torch.zeros((self.envs.num_envs,*self.buffer.actions.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_action_log_probs = torch.zeros((self.envs.num_envs,*self.buffer.action_log_probs.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_rnn_states = torch.zeros((self.envs.num_envs,*self.buffer.rnn_states.shape[2:]), dtype=torch.float, device=self.device)
         self.turn_rnn_states_critic = torch.zeros_like(self.turn_rnn_states)
-        self.turn_masks = torch.ones((self.n_rollout_threads,*self.buffer.masks.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_masks = torch.ones((self.envs.num_envs,*self.buffer.masks.shape[2:]), dtype=torch.float, device=self.device)
         self.turn_active_masks = torch.ones_like(self.turn_masks)
         self.turn_bad_masks = torch.ones_like(self.turn_masks)
-        self.turn_rewards = torch.zeros((self.n_rollout_threads, *self.buffer.rewards.shape[2:]), dtype=torch.float, device=self.device)
+        self.turn_rewards = torch.zeros((self.envs.num_envs, *self.buffer.rewards.shape[2:]), dtype=torch.float, device=self.device)
 
         self.turn_rewards_since_last_action = torch.zeros_like(self.turn_rewards)
 
@@ -285,21 +285,25 @@ class MainPlayer:
         self.use_share_obs = vobs.state.clone()
         self.use_available_actions = vobs.action_mask.clone()
         # self.use_is_active = _t2n(vobs.active).copy()
-        self.running_score = torch.zeros((self.n_rollout_threads), dtype=torch.float, device=self.device)
+        self.running_score = torch.zeros((self.envs.num_envs), dtype=torch.float, device=self.device)
 
+    def compute(self):
+        self.compute_one()
 
     @torch.no_grad()
-    def compute(self):
+    def compute_one(self):
         """Calculate returns for the collected data."""
         self.trainer.prep_rollout()
+        # print(self.buffer.share_obs.shape)
         # print(self.buffer.share_obs[-1].flatten(0, 1).shape)
         next_values = self.trainer.policy.get_values(
             self.buffer.share_obs[-1].flatten(0, 1),
             self.buffer.rnn_states_critic[-1].flatten(0, 1),
             self.buffer.masks[-1].flatten(0, 1)
         )
+        # print(next_values.shape)
         # next_values = np.array(np.split(_t2n(next_values), self.n_rollout_threads))
-        next_values = next_values.unflatten(0, (self.n_rollout_threads, -1))  # torch.split(next_values, next_values.size(dim=0)//self.n_rollout_threads)
+        next_values = next_values.unflatten(0, (self.buffer.share_obs.shape[1], -1))  # torch.split(next_values, next_values.size(dim=0)//self.n_rollout_threads)
         self.buffer.compute_returns(next_values, self.trainer.value_normalizer)
 
     def train(self):

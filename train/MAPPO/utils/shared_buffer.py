@@ -21,9 +21,9 @@ class SharedReplayBuffer(object):
     :param act_space: (gym.Space) action space for agents.
     """
 
-    def __init__(self, args, num_agents, obs_space, cent_obs_space, act_space, device):
+    def __init__(self, args, num_agents, obs_space, cent_obs_space, act_space, device, num_threads=None):
         self.episode_length = args.episode_length
-        self.n_rollout_threads = args.n_rollout_threads
+        self.n_rollout_threads = num_threads or args.n_rollout_threads
         self.hidden_size = args.hidden_size
         self.recurrent_N = args.recurrent_N
         self.gamma = args.gamma
@@ -147,6 +147,78 @@ class SharedReplayBuffer(object):
 
         self.step = (self.step + 1) % self.episode_length
 
+    def diaginsert(self, share_obs, obs, rnn_states, rnn_states_critic, actions, action_log_probs,
+                     value_preds, rewards, masks, bad_masks=None, active_masks=None, available_actions=None):
+        """
+        Insert data into the buffer. This insert function is used specifically for Hanabi, which is turn based.
+        :param share_obs: (argparse.Namespace) arguments containing relevant model, policy, and env information.
+        :param obs: (np.ndarray) local agent observations.
+        :param rnn_states_actor: (np.ndarray) RNN states for actor network.
+        :param rnn_states_critic: (np.ndarray) RNN states for critic network.
+        :param actions:(np.ndarray) actions taken by agents.
+        :param action_log_probs:(np.ndarray) log probs of actions taken by agents
+        :param value_preds: (np.ndarray) value function prediction at each step.
+        :param rewards: (np.ndarray) reward collected at each step.
+        :param masks: (np.ndarray) denotes whether the environment has terminated or not.
+        :param bad_masks: (np.ndarray) denotes indicate whether whether true terminal state or due to episode limit
+        :param active_masks: (np.ndarray) denotes whether an agent is active or dead in the env.
+        :param available_actions: (np.ndarray) actions available to each agent. If None, all actions are available.
+        """
+        d = self.n_rollout_threads - self.step - 1
+        self.share_obs.diagonal(d).movedim(-1, 0)[:] = share_obs
+        self.obs.diagonal(d).movedim(-1, 0)[:] = obs
+        self.rnn_states.diagonal(d).movedim(-1, 0)[:] = rnn_states
+        self.rnn_states_critic.diagonal(d).movedim(-1, 0)[:] = rnn_states_critic
+        self.actions.diagonal(d).movedim(-1, 0)[:] = actions
+        self.action_log_probs.diagonal(d).movedim(-1, 0)[:] = action_log_probs
+        self.value_preds.diagonal(d).movedim(-1, 0)[:] = value_preds
+        self.rewards.diagonal(d).movedim(-1, 0)[:] = rewards
+        self.masks.diagonal(d).movedim(-1, 0)[:] = masks
+        if bad_masks is not None:
+            self.bad_masks.diagonal(d).movedim(-1, 0)[:] = bad_masks
+        if active_masks is not None:
+            self.active_masks.diagonal(d).movedim(-1, 0)[:] = active_masks
+        if available_actions is not None:
+            self.available_actions.diagonal(d).movedim(-1, 0)[:] = available_actions
+
+        self.step = (self.step + 1) % self.episode_length
+
+    def partinsert(self, share_obs, obs, rnn_states, rnn_states_critic, actions, action_log_probs,
+                     value_preds, rewards, masks, bad_masks=None, active_masks=None, available_actions=None):
+        """
+        Insert data into the buffer. This insert function is used specifically for Hanabi, which is turn based.
+        :param share_obs: (argparse.Namespace) arguments containing relevant model, policy, and env information.
+        :param obs: (np.ndarray) local agent observations.
+        :param rnn_states_actor: (np.ndarray) RNN states for actor network.
+        :param rnn_states_critic: (np.ndarray) RNN states for critic network.
+        :param actions:(np.ndarray) actions taken by agents.
+        :param action_log_probs:(np.ndarray) log probs of actions taken by agents
+        :param value_preds: (np.ndarray) value function prediction at each step.
+        :param rewards: (np.ndarray) reward collected at each step.
+        :param masks: (np.ndarray) denotes whether the environment has terminated or not.
+        :param bad_masks: (np.ndarray) denotes indicate whether whether true terminal state or due to episode limit
+        :param active_masks: (np.ndarray) denotes whether an agent is active or dead in the env.
+        :param available_actions: (np.ndarray) actions available to each agent. If None, all actions are available.
+        """
+        d = self.step
+        self.share_obs[d, :d] = share_obs
+        self.obs[d, :d] = obs
+        self.rnn_states[d, :d] = rnn_states
+        self.rnn_states_critic[d, :d] = rnn_states_critic
+        self.actions[d, :d] = actions
+        self.action_log_probs[d, :d] = action_log_probs
+        self.value_preds[d, :d] = value_preds
+        self.rewards[d, :d] = rewards
+        self.masks[d, :d] = masks
+        if bad_masks is not None:
+            self.bad_masks[d, :d] = bad_masks
+        if active_masks is not None:
+            self.active_masks[d, :d] = active_masks
+        if available_actions is not None:
+            self.available_actions[d, :d] = available_actions
+
+        self.step = (self.step + 1) % self.episode_length
+
     def after_update(self):
         """Copy last timestep data to first index. Called after update to model."""
         self.share_obs[0] = self.share_obs[-1].copy()
@@ -267,6 +339,69 @@ class SharedReplayBuffer(object):
         active_masks = self.active_masks[:-1].reshape(-1, 1)
         action_log_probs = self.action_log_probs.reshape(-1, self.action_log_probs.shape[-1])
         advantages = advantages.reshape(-1, 1)
+
+        for indices in sampler:
+            # obs size [T+1 N M Dim]-->[T N M Dim]-->[T*N*M,Dim]-->[index,Dim]
+            share_obs_batch = share_obs[indices]
+            obs_batch = obs[indices]
+            rnn_states_batch = rnn_states[indices]
+            rnn_states_critic_batch = rnn_states_critic[indices]
+            actions_batch = actions[indices]
+            if self.available_actions is not None:
+                available_actions_batch = available_actions[indices]
+            else:
+                available_actions_batch = None
+            value_preds_batch = value_preds[indices]
+            return_batch = returns[indices]
+            masks_batch = masks[indices]
+            active_masks_batch = active_masks[indices]
+            old_action_log_probs_batch = action_log_probs[indices]
+            if advantages is None:
+                adv_targ = None
+            else:
+                adv_targ = advantages[indices]
+
+            yield share_obs_batch, obs_batch, rnn_states_batch, rnn_states_critic_batch, actions_batch,\
+                  value_preds_batch, return_batch, masks_batch, active_masks_batch, old_action_log_probs_batch,\
+                  adv_targ, available_actions_batch
+
+    def partial_ff_generator(self, advantages, idx, num_mini_batch=None, mini_batch_size=None):
+        """
+        Yield training data for MLP policies.
+        :param advantages: (np.ndarray) advantage estimates.
+        :param num_mini_batch: (int) number of minibatches to split the batch into.
+        :param mini_batch_size: (int) number of samples in each minibatch.
+        """
+        episode_length, n_rollout_threads = self.rewards.shape[0:2]
+        num_agents = 1
+        batch_size = n_rollout_threads * episode_length * num_agents
+
+        if mini_batch_size is None:
+            assert batch_size >= num_mini_batch, (
+                "PPO requires the number of processes ({}) "
+                "* number of steps ({}) * number of agents ({}) = {} "
+                "to be greater than or equal to the number of PPO mini batches ({})."
+                "".format(n_rollout_threads, episode_length, num_agents,
+                          n_rollout_threads * episode_length * num_agents,
+                          num_mini_batch))
+            mini_batch_size = batch_size // num_mini_batch
+
+        rand = torch.randperm(batch_size).numpy()
+        sampler = [rand[i * mini_batch_size:(i + 1) * mini_batch_size] for i in range(num_mini_batch)]
+
+        share_obs = self.share_obs[:-1, :, idx].reshape(-1, *self.share_obs.shape[3:])
+        obs = self.obs[:-1, :, idx].reshape(-1, *self.obs.shape[3:])
+        rnn_states = self.rnn_states[:-1, :, idx].reshape(-1, *self.rnn_states.shape[3:])
+        rnn_states_critic = self.rnn_states_critic[:-1, :, idx].reshape(-1, *self.rnn_states_critic.shape[3:])
+        actions = self.actions[:, :, idx].reshape(-1, self.actions.shape[-1])
+        if self.available_actions is not None:
+            available_actions = self.available_actions[:-1, :, idx].reshape(-1, self.available_actions.shape[-1])
+        value_preds = self.value_preds[:-1, :, idx].reshape(-1, 1)
+        returns = self.returns[:-1, :, idx].reshape(-1, 1)
+        masks = self.masks[:-1, :, idx].reshape(-1, 1)
+        active_masks = self.active_masks[:-1, :, idx].reshape(-1, 1)
+        action_log_probs = self.action_log_probs[:, :, idx].reshape(-1, self.action_log_probs.shape[-1])
+        advantages = advantages[:, :, idx].reshape(-1, 1)
 
         for indices in sampler:
             # obs size [T+1 N M Dim]-->[T N M Dim]-->[T*N*M,Dim]-->[index,Dim]

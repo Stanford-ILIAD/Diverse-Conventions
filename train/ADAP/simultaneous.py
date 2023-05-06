@@ -30,7 +30,7 @@ def generate_player(args, env, run_dir, device):
     config = {
         'all_args': args,
         'envs': env,
-        'device': 'cpu',
+        'device': device,
         'num_agents': 2,
         'run_dir': run_dir
     }

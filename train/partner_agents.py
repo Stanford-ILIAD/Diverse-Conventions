@@ -75,6 +75,175 @@ class CentralizedAgent(VectorAgent):
         self.cent_player.turn_masks[~dones, self.player_id] = 1
 
 
+class CentralizedMultiAgent(VectorAgent):
+    def __init__(self, cent_player: MainPlayer, player_id: int, policies, threads):
+        self.cent_player = cent_player
+        self.player_id = player_id
+        self.policies = policies
+
+        self.threads = threads
+
+    def get_action(self, obs, record=True):
+        available_actions = obs.action_mask
+        share_obs = obs.state
+        # choose = obs.active
+        obs = obs.obs
+
+        threads = self.threads
+
+        self.cent_player.trainer.prep_rollout()
+
+        for i, p in enumerate(self.policies):
+            (
+                self.cent_player.turn_values[i * threads : (i + 1) * threads, self.player_id],
+                self.cent_player.turn_actions[i * threads : (i + 1) * threads, self.player_id],
+                self.cent_player.turn_action_log_probs[i * threads : (i + 1) * threads, self.player_id],
+                self.cent_player.turn_rnn_states[i * threads : (i + 1) * threads, self.player_id],
+                self.cent_player.turn_rnn_states_critic[i * threads : (i + 1) * threads, self.player_id]
+            ) = p.get_actions(
+                share_obs[i * threads : (i + 1) * threads],
+                obs[i * threads : (i + 1) * threads],
+                self.cent_player.turn_rnn_states[i * threads : (i + 1) * threads, self.player_id],
+                self.cent_player.turn_rnn_states_critic[i * threads : (i + 1) * threads, self.player_id],
+                self.cent_player.turn_masks[i * threads : (i + 1) * threads, self.player_id],
+                available_actions[i * threads : (i + 1) * threads]
+            )
+
+        # (action, action_log_prob, rnn_state) = self.actor(
+        #     obs,
+        #     self.cent_player.turn_rnn_states[:, self.player_id],
+        #     self.cent_player.turn_masks[:, self.player_id],
+        #     available_actions,
+        # )
+        # critic = self.cent_player.trainer.policy.critic
+        # (value, rnn_state_critic) = critic(
+        #     share_obs,
+        #     self.cent_player.turn_rnn_states_critic[:, self.player_id],
+        #     self.cent_player.turn_masks[:, self.player_id],
+        # )
+
+        self.cent_player.turn_obs[:, self.player_id] = obs
+        self.cent_player.turn_share_obs[:, self.player_id] = share_obs
+        self.cent_player.turn_available_actions[:, self.player_id] = available_actions
+        # self.cent_player.turn_values[:, self.player_id] = value
+        # self.cent_player.turn_actions[:, self.player_id] = action
+        # self.cent_player.turn_action_log_probs[:, self.player_id] = action_log_prob
+        # self.cent_player.turn_rnn_states[:, self.player_id] = rnn_state
+        # self.cent_player.turn_rnn_states_critic[:, self.player_id] = rnn_state_critic
+        self.cent_player.turn_rewards[:, self.player_id] = 0
+        self.cent_player.turn_active_masks[:, self.player_id] = 1
+
+        return self.cent_player.turn_actions[:, self.player_id]
+
+    def update(self, rewards, dones):
+        rewards = rewards
+        dones = dones.to(torch.bool)
+        # print(dones)
+        # print(rewards, self.cent_player.turn_rewards[:, 1])
+        self.cent_player.turn_rewards[:, self.player_id] += rewards[:, None]
+
+        self.cent_player.turn_masks[dones, self.player_id] = 0
+        self.cent_player.turn_rnn_states[dones, self.player_id] = 0
+        self.cent_player.turn_rnn_states_critic[dones, self.player_id] = 0
+
+        self.cent_player.turn_masks[~dones, self.player_id] = 1
+
+
+class MixedAgent(VectorAgent):
+    def __init__(self, cent_player: MainPlayer, player_id: int, mix_policies, length):
+        self.cent_player = cent_player
+        self.player_id = player_id
+        self.mix_policies = mix_policies
+
+        self.step = 0
+        self.length = length
+
+    def get_action(self, obs, record=True):
+        available_actions = obs.action_mask
+        share_obs = obs.state
+        # choose = obs.active
+        obs = obs.obs
+
+        self.cent_player.trainer.prep_rollout()
+
+        mix_mask = (torch.rand((self.length - 1), device=self.cent_player.device) < 0.5)
+
+        if self.step >= self.length:
+            mix_mask[:self.step - self.length] = 0
+        elif self.step > 0:
+            mix_mask[-self.step:] = 0
+        
+        for i, p in enumerate(self.mix_policies):
+            if not torch.any(mix_mask == i):
+                continue
+            out_mask = torch.zeros((self.length - 1, 2), device=self.cent_player.device, dtype=torch.bool)
+            out_mask[:, self.player_id] = (mix_mask == i)
+            x = p.get_actions(
+                share_obs[mix_mask == i],
+                obs[mix_mask == i],
+                self.cent_player.turn_mp_rnn_states[out_mask],
+                self.cent_player.turn_mp_rnn_states_critic[out_mask],
+                self.cent_player.turn_mp_masks[out_mask],
+                available_actions[mix_mask == i]
+            )
+            # print(x[1].flatten())
+            # print(self.turn_mp_actions[out_mask].flatten())
+            (
+                self.cent_player.turn_mp_values[out_mask],
+                _,
+                self.cent_player.turn_mp_action_log_probs[out_mask],
+                self.cent_player.turn_mp_rnn_states[out_mask],
+                self.cent_player.turn_mp_rnn_states_critic[out_mask]
+            ) = x
+
+            self.cent_player.turn_mp_actions[out_mask] = x[1].to(torch.float)
+            # print(self.turn_mp_values[out_mask].flatten())
+
+        # (action, action_log_prob, rnn_state) = self.actor(
+        #     obs,
+        #     self.cent_player.turn_mp_rnn_states[:, self.player_id],
+        #     self.cent_player.turn_mp_masks[:, self.player_id],
+        #     available_actions,
+        # )
+        # critic = self.cent_player.trainer.policy.critic
+        # (value, rnn_state_critic) = critic(
+        #     share_obs,
+        #     self.cent_player.turn_mp_rnn_states_critic[:, self.player_id],
+        #     self.cent_player.turn_mp_masks[:, self.player_id],
+        # )
+
+        self.cent_player.turn_mp_obs[:, self.player_id] = obs
+        self.cent_player.turn_mp_share_obs[:, self.player_id] = share_obs
+        self.cent_player.turn_mp_available_actions[:, self.player_id] = available_actions
+        # self.cent_player.turn_mp_values[:, self.player_id] = value
+        # self.cent_player.turn_mp_actions[:, self.player_id] = action
+        # self.cent_player.turn_mp_action_log_probs[:, self.player_id] = action_log_prob
+        # self.cent_player.turn_mp_rnn_states[:, self.player_id] = rnn_state
+        # self.cent_player.turn_mp_rnn_states_critic[:, self.player_id] = rnn_state_critic
+        self.cent_player.turn_mp_rewards[:, self.player_id] = 0
+        self.cent_player.turn_mp_active_masks[:, self.player_id] = 1
+
+        self.step += 1
+        if self.step > 2 * self.length:
+            self.step = 0
+
+        return self.cent_player.turn_mp_actions[:, self.player_id]
+
+    def update(self, rewards, dones):
+        rewards = rewards
+        dones = dones.to(torch.bool)
+        # print(dones)
+        # print(rewards, self.cent_player.turn_mp_rewards[:, 1])
+        self.cent_player.turn_mp_rewards[:, self.player_id] += rewards[:, None]
+
+        self.cent_player.turn_mp_masks[dones, self.player_id] = 0
+        self.cent_player.turn_mp_rnn_states[dones, self.player_id] = 0
+        self.cent_player.turn_mp_rnn_states_critic[dones, self.player_id] = 0
+
+        self.cent_player.turn_mp_masks[~dones, self.player_id] = 1
+        
+
+
 # class DecentralizedAgent(Agent):
 #     def __init__(self, policy, critic=None):
 #         self.actor = policy
