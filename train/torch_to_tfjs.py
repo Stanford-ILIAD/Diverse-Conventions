@@ -36,21 +36,23 @@ class Policy(nn.Module):
 
 config = get_config()
 config.add_argument("--ai_name", type=str)
+config.add_argument("--full_dir", type=str)
 args = config.parse_args()
 
 envs = generate_env(args.env_name, args.n_rollout_threads, args.over_layout, use_env_cpu=True)
 
 args.hanabi_name = args.over_layout if args.env_name == 'overcooked' else args.env_name
 
-run_dir = (
-        os.path.dirname(os.path.abspath(__file__))
-        + "/results/"
-        + args.hanabi_name
-        + "/"
-        + (args.run_dir)
-        + "/"
-        + str(args.seed)
-    )
+run_dir = args.full_dir
+# (
+#         os.path.dirname(os.path.abspath(__file__))
+#         + "/results/"
+#         + args.hanabi_name
+#         + "/"
+#         + (args.run_dir)
+#         + "/"
+#         + str(args.seed)
+#     )
 
 flask_dir = Path(
         os.path.dirname(os.path.abspath(__file__))

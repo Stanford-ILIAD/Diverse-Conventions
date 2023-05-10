@@ -63,7 +63,8 @@ class R_Actor(nn.Module):
         actor_features = self.base(obs)
 
         if self._use_naive_recurrent_policy or self._use_recurrent_policy:
-            actor_features, rnn_states = self.rnn(actor_features, rnn_states, masks)
+            actor_features_r, rnn_states = self.rnn(actor_features, rnn_states, masks)
+            actor_features = actor_features + actor_features_r
 
         actions, action_log_probs = self.act(actor_features, available_actions, deterministic)
 
@@ -96,7 +97,8 @@ class R_Actor(nn.Module):
         actor_features = self.base(obs)
 
         if self._use_naive_recurrent_policy or self._use_recurrent_policy:
-            actor_features, rnn_states = self.rnn(actor_features, rnn_states, masks)
+            actor_features_r, rnn_states = self.rnn(actor_features, rnn_states, masks)
+            actor_features = actor_features + actor_features_r
 
         action_log_probs, dist_entropy = self.act.evaluate_actions(actor_features,
                                                                    action, available_actions,
@@ -131,7 +133,8 @@ class R_Actor(nn.Module):
         actor_features = self.base(obs)
 
         if self._use_naive_recurrent_policy or self._use_recurrent_policy:
-            actor_features, rnn_states = self.rnn(actor_features, rnn_states, masks)
+            actor_features_r, rnn_states = self.rnn(actor_features, rnn_states, masks)
+            actor_features = actor_features + actor_features_r
 
         return self.act.action_out(actor_features, available_actions)
 
@@ -159,8 +162,8 @@ class R_Critic(nn.Module):
         base = CNNBase if len(cent_obs_shape) == 3 else MLPBase
         self.base = base(args, cent_obs_shape)
 
-        if self._use_naive_recurrent_policy or self._use_recurrent_policy:
-            self.rnn = RNNLayer(self.hidden_size, self.hidden_size, self._recurrent_N, self._use_orthogonal)
+        # if self._use_naive_recurrent_policy or self._use_recurrent_policy:
+        #     self.rnn = RNNLayer(self.hidden_size, self.hidden_size, self._recurrent_N, self._use_orthogonal)
 
         def init_(m):
             return init(m, init_method, lambda x: nn.init.constant_(x, 0))
@@ -187,8 +190,8 @@ class R_Critic(nn.Module):
         masks = check(masks).to(**self.tpdv)
 
         critic_features = self.base(cent_obs)
-        if self._use_naive_recurrent_policy or self._use_recurrent_policy:
-            critic_features, rnn_states = self.rnn(critic_features, rnn_states, masks)
+        # if self._use_naive_recurrent_policy or self._use_recurrent_policy:
+        #     critic_features, rnn_states = self.rnn(critic_features, rnn_states, masks)
         values = self.v_out(critic_features)
 
         return values, rnn_states

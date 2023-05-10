@@ -300,6 +300,7 @@ def get_config():
 
     parser.add_argument("--pop_size", type=int, default=3, help="Size of Population to Train")
 
+    parser.add_argument("--temperature", type=float, default=0.01, help="Temperature for weights if using averages")
     parser.add_argument("--xp_weight", type=float, default=1, help="Parameter of Cross-Play Weight")
     parser.add_argument("--mp_weight", type=float, default=0.1, help="Parameter of Mixed-Play Weight")
     parser.add_argument("--mix_prob", type=float, default=0.5, help="Parameter of Mixed-Play Probability")

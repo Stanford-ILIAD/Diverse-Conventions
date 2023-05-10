@@ -142,7 +142,7 @@ class XDPlayer(MainPlayer):
 
         self.sp_scores = self.scores[0]
         self.xp_scores = [[self.scores[1 + i + p * j] for i in range(len(self.agent_set))] for j in range(2)]
-        accumulated_scores = [[sum(x) / len(x) for x in s] for s in self.xp_scores]
+        accumulated_scores = [[sum(x) / len(x) * self.xp_weight for x in s] for s in self.xp_scores]
         full_accumulated_scores = [accumulated_scores[0][i] + accumulated_scores[1][i] for i in range(p)]
         if len(full_accumulated_scores) > 0:
             self.best_i = full_accumulated_scores.index(max(full_accumulated_scores))

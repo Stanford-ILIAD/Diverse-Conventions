@@ -37,6 +37,7 @@ class XD:
         self.xp_weight = xp_weight
         self.mp_weight = mp_weight
         self.use_average = use_average
+        self.temperature = args.temperature
 
         self.clip_param = args.clip_param
         self.ppo_epoch = args.ppo_epoch
@@ -299,6 +300,14 @@ class XD:
 
         return np.argmax(means)
 
+    def get_soft_best(self, bufs0, bufs1):
+        means = torch.zeros(len(bufs0))
+        for i, (bi0, bi1) in enumerate(zip(bufs0, bufs1)):
+            means[i] = torch.mean(bi0.rewards) + torch.mean(bi1.rewards)
+
+        means = means * self.xp_weight / self.temperature
+        return torch.softmax(means, dim=0)
+
     def train(self, sp_buf, xp_buf0, xp_buf1, mp_buf, update_actor=True, best_i=None):
         """
         Perform a training update using minibatch GD.
@@ -324,7 +333,26 @@ class XD:
             self.policy.set_sp()
             loss = self.train_step(self.get_gen(sp_buf, sp_adv), train_info, 1, update_actor)
             if self.xp_weight != 0:
-                if len(self.agent_set) > 0:
+                if self.use_average:
+                    soft_best = self.get_soft_best(xp_buf0, xp_buf1)
+                    # print(soft_best)
+                    for i in range(len(self.agent_set)):
+                        self.policy.set_xp(0, i)
+                        loss += self.train_step(
+                            self.get_partial_gen(xp_buf0[i], xp0_adv[i], 0),
+                            train_info,
+                            -self.xp_weight,
+                            update_actor,
+                        ) * soft_best[i]
+
+                        self.policy.set_xp(1, i)
+                        loss += self.train_step(
+                            self.get_partial_gen(xp_buf1[i], xp1_adv[i], 1),
+                            train_info,
+                            -self.xp_weight,
+                            update_actor,
+                        ) * soft_best[i]
+                elif len(self.agent_set) > 0:
                     i = best_i
                     self.policy.set_xp(0, i)
                     loss += self.train_step(
