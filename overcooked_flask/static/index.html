@@ -144,7 +144,7 @@
       </ol>
       <br />
       <center><form action="javascript:reveal()" method="GET">
-          Correctly answer the questions above to activate the start button.<br />Please enter your SUNET ID (first part of your stanford email).<br />
+          Correctly answer the questions above to activate the start button.<br />Please enter your Prolific ID.<br />
           <input type="hidden" name="env" value="fetch" />
           <input type="hidden" name="agent" value="combined" />
           SUNET ID: <input type="text" name="prolificID" id="prolificID" disabled /><br>
@@ -230,9 +230,12 @@
 	    <div class="form-group col-lg-2">
 	      <label for="layout">Layout</label>
 	      <select class="form-control" id="layout">
-		<option value="simple" onclick="blurLayout()">Cramped Room (simple)</option>
+            <option value="five_by_five" onclick="blurLayout()">5x5</option>
+		    <option value="random1" onclick="blurLayout()">Coordination Ring (random1)</option>
+            <option value="random3" onclick="blurLayout()">random3</option>
+            <option value="scenario1_s" onclick="blurLayout()">scenario1_s</option>
+		    <option value="simple" onclick="blurLayout()">Cramped Room (simple)</option>
 		<!-- <option value="uindent_s">Asymmetric Advantages (unident_s)</option> -->
-		<option value="random1" onclick="blurLayout()">Coordination Ring (random1)</option>
 		<!-- <option value="random0">Forced Coordination (random0)</option> -->
 		<!-- <option value="random3">Counter Circuit (random3)</option> -->
 	      </select>

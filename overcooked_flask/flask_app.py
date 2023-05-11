@@ -25,12 +25,7 @@ MLPs = {}
 MDPs = {}
 POLICIES = {}
 
-CONVERT_LAYOUT_NAMES = {
-    "simple": "cramped_room",
-    "random1": "coordination_ring"
-}
-
-LAYOUTS = ["cramped_room", "coordination_ring"]
+LAYOUTS = ["five_by_five", "random1", "random3", "scenario1_s", "simple"]
 ALGOS = ["BLANK", "SP", "MP", "ADAP", "XP"]
 ALGO_NAMES = ["No AI", "AI S", "AI M", "AI D", "AI X"]
 op_to_ind = {
@@ -83,36 +78,6 @@ def get_user_status(prolific_id, ip_addr, options, curalgo=None, curlayout=None)
     return {'status': done, 'code': CODE, 'record': stringtoret, 'nextalgo': next_algo, 'nextlayout': next_layout}
 
 
-# def get_prediction(s, policy):
-#     s = torch.tensor(s).unsqueeze(0).float()
-#     actions = policy.predict(observation=s, record=False, deterministic=False)
-#     return int(actions[0])
-
-
-# def process_state(state_dict, layout_name):
-#     def object_from_dict(object_dict):
-#         return ObjectState(**object_dict)
-
-#     def player_from_dict(player_dict):
-#         held_obj = player_dict.get("held_object")
-#         if held_obj is not None:
-#             player_dict["held_object"] = object_from_dict(held_obj)
-#         return PlayerState(**player_dict)
-
-#     def state_from_dict(state_dict):
-#         state_dict["players"] = [player_from_dict(
-#             p) for p in state_dict["players"]]
-#         object_list = [object_from_dict(o)
-#                        for _, o in state_dict["objects"].items()]
-#         state_dict["objects"] = {ob.position: ob for ob in object_list}
-#         return OvercookedState(**state_dict)
-
-#     state = state_from_dict(copy.deepcopy(state_dict))
-#     MDP = MDPs[layout_name]
-#     MLP = MLPs[layout_name]
-#     return MDP.featurize_state(state, MLP)
-
-
 @app.route('/initrecord', methods=['POST'])
 def initrecord():
     ip_addr = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
@@ -128,21 +93,6 @@ def initrecord():
         return jsonify({'status': True})
 
 
-# @app.route('/predict', methods=['POST'])
-# def predict():
-#     if request.method == 'POST':
-#         data_json = json.loads(request.data)
-#         state_dict, player_id_dict, server_layout_name, algo, timestep = data_json["state"], data_json[
-#             "npc_index"], data_json["layout_name"], data_json["algo"], data_json["timestep"]
-#         if algo == "BLANK":
-#             return jsonify({'action': 4})
-#         player_id = int(player_id_dict)
-#         s_all = process_state(state_dict, server_layout_name)
-#         policy = POLICIES[server_layout_name][algo]
-#         a = get_prediction(s_all[player_id], policy)
-#         return jsonify({'action': a})
-
-
 @app.route('/updatemodel', methods=['POST'])
 def updatemodel():
     ip_addr = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
@@ -154,7 +104,6 @@ def updatemodel():
             "traj_id"], data_json["layout_name"], data_json["algo"], data_json["algo_options"]
         print(traj_id, prolific_id)
 
-        layout_name = CONVERT_LAYOUT_NAMES[layout_name]
         print(layout_name)
 
         if ARGS.trajs_savepath:
@@ -182,8 +131,6 @@ def updatemodel():
 
             return jsonify(get_user_status(prolific_id, ip_addr, algo_options, algo, layout_name))
 
-        # Finetune model: todo
-
         return jsonify({'status': True})
 
 
@@ -192,56 +139,10 @@ def root():
     return app.send_static_file('index.html')
 
 
-# def load_models(path: str, ARGS):
-#     rew_shaping_params = {
-#         "PLACEMENT_IN_POT_REW": 3,
-#         "DISH_PICKUP_REWARD": 3,
-#         "SOUP_PICKUP_REWARD": 5,
-#         "DISH_DISP_DISTANCE_REW": 0,
-#         "POT_DISTANCE_REW": 0,
-#         "SOUP_DISTANCE_REW": 0,
-#     }
-
-#     for layout in os.listdir(path):
-#         layoutdir = path + "/" + layout
-#         if not os.path.isdir(layoutdir):
-#             continue
-#         translated_name = NAME_TRANSLATION[layout]
-
-#         mdp = OvercookedGridworld.from_layout_name(
-#             layout_name=translated_name, rew_shaping_params=rew_shaping_params
-#         )
-
-#         mlp = MediumLevelPlanner.from_pickle_or_compute(
-#             mdp, NO_COUNTERS_PARAMS, force_compute=False
-#         )
-
-#         dummy_env = DecentralizedOvercooked(translated_name)
-
-#         layout_algos = {}
-#         for algo in os.listdir(layoutdir):
-#             splitalgo = algo.split('.')
-#             if splitalgo[-1] != 'pt':
-#                 break
-
-#             algopath = layoutdir + "/" + algo
-#             actor = R_Actor(ARGS, dummy_env.observation_space, dummy_env.action_space)
-#             state_dict = torch.load(algopath)
-#             actor.load_state_dict(state_dict)
-#             layout_algos[splitalgo[0]] = DecentralizedAgent(actor)
-
-#         MLPs[layout] = mlp
-#         MDPs[layout] = mdp
-#         POLICIES[layout] = layout_algos
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--modelpath', type=str,
-    #                     help="folder to load AI player")
     parser.add_argument('--trajs_savepath', type=str,
                         help="folder to save trajectories")
     ARGS = parser.parse_args()
-    # load_models(ARGS.modelpath, ARGS)
 
     app.run(debug=True, host='0.0.0.0')
