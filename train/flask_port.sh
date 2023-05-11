@@ -13,7 +13,7 @@ do
     
     python torch_to_tfjs.py --env_name overcooked --seed 1 --n_rollout_threads 1 --layer_N 2 --hidden_size 64 --over_layout $r --run_dir xp --ai_name XP --full_dir results/$r/xp/1/oracle_8 --use_render
 
-    python torch_to_tfjs.py --env_name overcooked --seed 1 --n_rollout_threads 1 --layer_N 2 --hidden_size 64 --over_layout $r --run_dir mp --ai_name MP --full_dir results/$r/xp/1/oracle_8 --use_render
+    python torch_to_tfjs.py --env_name overcooked --seed 1 --n_rollout_threads 1 --layer_N 2 --hidden_size 64 --over_layout $r --run_dir mp --ai_name MP --full_dir results/$r/mp/1/oracle_8 --use_render
 
     python torch_to_tfjs.py --env_name overcooked --seed 1 --n_rollout_threads 1 --layer_N 2 --hidden_size 64 --over_layout $r --run_dir adap --ai_name ADAP --full_dir results/$r/baselines/ADAP/adap_8/1/oracle_8 --use_render
     
