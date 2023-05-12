@@ -8,6 +8,7 @@ import numpy as np
 import gym
 
 from flask import Flask, jsonify, request
+from flask_lt import run_with_lt
 # from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld, OvercookedState, PlayerState, ObjectState
 # from overcooked_ai_py.planning.planners import MediumLevelPlanner, NO_COUNTERS_PARAMS
 
@@ -20,12 +21,16 @@ from flask import Flask, jsonify, request
 # from config import get_config
 
 app = Flask(__name__)
+run_with_lt(app)
+
 
 MLPs = {}
 MDPs = {}
 POLICIES = {}
 
-LAYOUTS = ["five_by_five", "random1", "random3", "scenario1_s", "simple"]
+
+LAYOUTS = ["simple", "random1"]
+# LAYOUTS = ["five_by_five", "random1", "random3", "scenario1_s", "simple"]
 ALGOS = ["BLANK", "SP", "MP", "ADAP", "XP"]
 ALGO_NAMES = ["No AI", "AI S", "AI M", "AI D", "AI X"]
 op_to_ind = {
@@ -70,11 +75,14 @@ def get_user_status(prolific_id, ip_addr, options, curalgo=None, curlayout=None)
                     bolded = True
             else:
                 if curalgo is not None and curlayout is not None and i != 0 and algo == curalgo and layout == curlayout:
-                    out_string = f"All done for \"{ALGO_NAMES[i]}\" in {layout}! <b>Please fill out <a href=\"https://forms.gle/9jXt8zacHVsjjwsu7\" target=\"_blank\" rel=\"noopener noreferrer\">this Google form</a></b><br />"
+                    out_string = f"All done for \"{ALGO_NAMES[i]}\" in {layout}! <b>Please fill out <a href=\"https://forms.gle/DqrE75gJPyjR1y3D6\" target=\"_blank\" rel=\"noopener noreferrer\">this Google form</a></b><br />"
                 else:
                     # print(curalgo, curlayout, i, layout)
                     out_string = f"All done for \"{ALGO_NAMES[i]}\" in {layout}!<br />"
             stringtoret += out_string
+
+    if done:
+        stringtoret += f"Congratulations! You finished all experiments. Please fill out <a href=\"https://forms.gle/EqCMvtrJbs5RCTFy7\" target=\"_blank\" rel=\"noopener noreferrer\">this last form</a></b> (in addition to the one above) to get the prolific completion code."
     return {'status': done, 'code': CODE, 'record': stringtoret, 'nextalgo': next_algo, 'nextlayout': next_layout}
 
 
