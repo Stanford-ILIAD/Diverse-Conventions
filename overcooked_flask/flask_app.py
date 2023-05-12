@@ -8,7 +8,6 @@ import numpy as np
 import gym
 
 from flask import Flask, jsonify, request
-from flask_lt import run_with_lt
 # from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld, OvercookedState, PlayerState, ObjectState
 # from overcooked_ai_py.planning.planners import MediumLevelPlanner, NO_COUNTERS_PARAMS
 
@@ -21,8 +20,6 @@ from flask_lt import run_with_lt
 # from config import get_config
 
 app = Flask(__name__)
-run_with_lt(app)
-
 
 MLPs = {}
 MDPs = {}
