@@ -108,7 +108,7 @@
       <!-- <p>After completing 2 games with an agent on a specific layout, <b> please fill out <a href="https://forms.gle/9jXt8zacHVsjjwsu7" target="_blank" rel="noopener noreferrer">this Google form</a> </b> and sign in with your Stanford email. In total, there are 8 sections in the form since there are 2 layouts and 4 AI agents (algo0 to algo3). Note that you should still play 2 games on each layout with the "No AI" algo selected to familiarize yourself with the environment, but we will not be asking for responses on those sections in the form.</p> -->
       <!-- After you have played TWO games with each agent, the Prolific completion code will be shown to you.<br> -->
       <p>
-      <!-- <b>If you repeatedly score 0 points your submission may be rejected. If you score 40 points often enough you may receive a bonus payment.</b> --><br>
+      <b>If you repeatedly score 0 points your submission may be rejected. However, as long as we see good-faith participation in the game, your submission will be accepted.</b><br>
       Good luck and have fun!<br>
       
       </p>
@@ -141,13 +141,17 @@
           <input type="radio" name="q2" id="q2_option3" value="q2_option3" onclick="checkAnswers()" />
           <label for="q2_option3">I have to play with each algo three times. I have to use the dropdown menu to select the agent I am playing with.</label><br>
         </li>
+        <li>Do you consent to the recording of your gameplay and a temporary collection of your Prolific ID? We will only see a history of actions that you and your agent take on screen (like "Left", "Right", "Up", "Down", "Space"). Your Prolific ID will only be used to associate your submission to the google forms and provide payment in a timely manner.<br />
+          <input type="radio" name="q3" id="q3_option1" value="q3_option1" onclick="checkAnswers()" />
+          <label for="q3_option1">Yes</label><br>
+        </li>
       </ol>
       <br />
       <center><form action="javascript:reveal()" method="GET">
           Correctly answer the questions above to activate the start button.<br />Please enter your Prolific ID.<br />
           <input type="hidden" name="env" value="fetch" />
           <input type="hidden" name="agent" value="combined" />
-          SUNET ID: <input type="text" name="prolificID" id="prolificID" disabled /><br>
+          Prolific ID: <input type="text" name="prolificID" id="prolificID" disabled /><br>
           <input type="submit" value="Start" id="startButton" disabled />
       </form></center>
     </div>
@@ -156,7 +160,7 @@
       window.onload = checkAnswers();
       function checkAnswers() {
           if (document.getElementById('q0_option1').checked // && document.getElementById('g0_option1').checked
-	      && document.getElementById('q1_option1').checked && document.getElementById('q2_option2').checked) {
+	          && document.getElementById('q1_option1').checked && document.getElementById('q2_option2').checked && document.getElementById('q3_option1').checked) {
               document.getElementById('prolificID').disabled = false;
               document.getElementById('startButton').disabled = false;
           }
@@ -177,9 +181,11 @@
               document.getElementById('q2_option1').disabled = true;
               document.getElementById('q2_option2').disabled = true;
               document.getElementById('q2_option3').disabled = true;
+              document.getElementById('q3_option1').disabled = true;
+
 	      
               document.getElementById('prolificID').disabled = true;
-	      document.getElementById('prolificID').blur();
+	          document.getElementById('prolificID').blur();
               document.getElementById('startButton').disabled = true;
               document.getElementById('maindiv').style.display = 'initial';
               

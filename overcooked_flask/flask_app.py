@@ -8,6 +8,7 @@ import numpy as np
 import gym
 
 from flask import Flask, jsonify, request
+from pyngrok import ngrok
 # from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld, OvercookedState, PlayerState, ObjectState
 # from overcooked_ai_py.planning.planners import MediumLevelPlanner, NO_COUNTERS_PARAMS
 
@@ -150,4 +151,6 @@ if __name__ == '__main__':
                         help="folder to save trajectories")
     ARGS = parser.parse_args()
 
-    app.run(debug=True, host='0.0.0.0')
+    public_url = ngrok.connect(5000).public_url
+    print(" * ngrok tunnel \"{}\" -> \"http://127.0.0.1:{}\"".format(public_url, 5000))
+    app.run(debug=False, host="0.0.0.0")
