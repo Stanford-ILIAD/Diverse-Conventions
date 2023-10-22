@@ -1,0 +1,11 @@
+/build
+*__pycache__*
+*.egg-info
+/scripts/*runs/
+*.DS_Store
+/pantheonrl_extension/runs/
+train/balance/
+train/random1/
+train/simple/
+train/results/
+overcooked_flask/testing/
