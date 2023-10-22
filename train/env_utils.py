@@ -23,7 +23,7 @@ def generate_env(name, num_envs, layout='simple', use_env_cpu=False, use_baselin
                 device='cpu' if use_env_cpu else 'cuda'
             )
         else:
-            return OvercookedMadrona(layout, num_envs, 0, debug_compile=False, use_env_cpu=use_env_cpu, use_cpu=True)
+            return OvercookedMadrona(layout, num_envs, 0, debug_compile=False, use_env_cpu=use_env_cpu)
     else:
         raise Exception("Invalid environment name")
 

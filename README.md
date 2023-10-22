@@ -22,9 +22,11 @@ miniconda3/bin/conda init bash
 ```
 conda create -n CoMeDi python=3.10
 conda activate CoMeDi
-pip install torch numpy
+pip install setuptools==65.5.0 "wheel<0.40.0"
+pip install gym==0.21.0
+pip install stable-baselines3==1.7.0
 
-git clone https://github.com/Stanford-ILIAD/Diverse-Conventions
+git clone https://github.com/Stanford-ILIAD/Diverse-Conventions CoMeDi
 cd CoMeDi
 git submodule update --init --recursive
 mkdir build
@@ -41,6 +43,31 @@ NOTE: For cmake, you make need to specify the cuda tookit directory as follows:
 ```
 cmake -D CUDAToolkit_ROOT=/usr/local/cuda-12.0 ..
 ```
+
+## Reproducing Overcooked Results
+
+Run the following shell scripts, replacing "simple" with whichever Overcooked environment you want to train:
+```
+cd train
+
+./train_sp.sh simple
+
+./train_adap.sh simple
+./adap_cbr.sh simple
+
+./train_xp.sh simple
+./xp_cbr.sh simple
+
+./train_mp.sh simple
+./mp_cbr.sh simple
+```
+
+To convert any of the models to a tensorflow-js version to use in the web version of Overcooked, use the torch_to_tfjs.py script and read its example usage at the top of the file.
+
+You can download pretrained weights and logs at [this link](https://drive.google.com/drive/folders/1ZcbopBuMVCSxtltZsz4E1C7vvDAoyNgq?usp=share_link).
+
+You can also download the raw (anonymized) user study data at [this link](https://drive.google.com/drive/folders/1hVS8U17FYxrSPokA_sSBB8mJ-xBRubmW?usp=share_link).
+
 
 ## Running scripts
 
