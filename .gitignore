@@ -1,4 +1,6 @@
 *~
+/build
+/scripts/*runs/
 __pycache__/
 *.egg-info
 *.DS_Store
@@ -9,3 +11,9 @@ instance/
 *.ipynb_checkpoints*
 trajs/
 .mypy_cache/
+/pantheonrl_extension/runs/
+train/balance/
+train/random1/
+train/simple/
+train/results/
+overcooked_flask/testing/
