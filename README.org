@@ -13,6 +13,12 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="style.css"/>
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="bootstrap.min.css"/>
 
+#+HTML_HEAD: <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+#+HTML_HEAD: <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+#+HTML_HEAD: <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.8.0/codemirror.min.js"></script>
+#+HTML_HEAD: <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.3/clipboard.min.js"></script>
+#+HTML_HEAD: <script src="js/app.js"></script>
+
 #+EXPORT_FILE_NAME: index
 
 #+PROPERTY:  header-args :eval never-export
@@ -131,9 +137,39 @@ parent.document.getElementsByTagName('iframe')[0].scrolling="no";
 </script>
 #+END_export
 #+html: </div>
-
-
 #+html:</div></div></div>
+
+
+#+BEGIN_export html
+<div class="row">
+	  <div class="col-md-8 col-md-offset-2">
+            <h3>
+              Citation
+            </h3>
+            <div class="form-group col-md-10 col-md-offset-1">
+              <textarea id="bibtex" class="form-control" readonly>@inproceedings{sarkar2023diverse,
+	title={Diverse Conventions for Human-{AI} Collaboration},
+	author={Bidipta Sarkar and Andy Shih and Dorsa Sadigh},
+	booktitle={Thirty-seventh Conference on Neural Information Processing Systems},
+	year={2023}
+}</textarea>
+            </div>
+	  </div>
+	  
+	</div>
+
+	<div class="row">
+	  <div class="col-md-8 col-md-offset-2">
+            <!-- <h3> -->
+              <!--     Acknowledgements -->
+              <!-- </h3> -->
+            <p class="text-justify">
+              <br><br>
+              The website template was borrowed from <a href="http://jonbarron.info/">Jon Barron</a> and <a href="https://robotics-transformer.github.io/">RT-1</a>
+            </p>
+	  </div>
+	</div>
+#+END_export
 
 # Local Variables:
 # eval: (add-hook 'after-save-hook (lambda nil (when (y-or-n-p "Tangle?") (org-html-export-to-html))) nil t)
