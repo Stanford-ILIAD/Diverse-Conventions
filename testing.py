@@ -30,7 +30,7 @@ def generate_gym(args):
         return DecentralizedTree()
     if args.env_name == "Line":
         args.hanabi_name = "Line"
-        return DecentralizedLine()
+        return DecentralizedLine(do_test=True)
     if args.env_name == "Overcooked":
         args.hanabi_name = "Overcooked"
         return DecentralizedOvercooked("simple")

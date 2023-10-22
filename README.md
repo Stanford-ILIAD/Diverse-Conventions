@@ -1,12 +1,17 @@
 # Diverse-Conventions
 Exploring techniques to generate diverse conventions in multi-agent settings. The current algorithm can be found in the XD directory.
 
+Use this branch for validating the results of the toy environments (Blind Bandits and Balance Beam).
+
 ## Installation
 ```
 mkdir Diverse-Conventions
 cd Diverse-Conventions
-conda create --name DiverseConventions python=3.10
-conda activate DiverseConventions
+conda create --name DiverseConventionsToy python=3.10
+conda activate DiverseConventionsToy
+pip install setuptools==65.5.0 "wheel<0.40.0"
+pip install gym==0.21.0
+pip install stable-baselines3==1.7.0
 git init
 git remote add origin https://github.com/Stanford-ILIAD/Diverse-Conventions.git
 git pull origin master
@@ -14,7 +19,61 @@ git submodule update --init --recursive
 pip install -e .
 cd PantheonRL
 pip install -e .
+pip install -e overcookedgym/human_aware_rl/overcooked_ai
 cd ..
+```
+
+## Reproducing Results
+
+### Blind Bandits (Tree) Environment
+
+For the baseline (ADAP) and CoMeDi results, run:
+```
+./tree_script.sh
+```
+
+You can construct the plots from the paper using:
+
+```
+cd plots
+python plot_results.py --loss_type ADAP --env_name Tree --name ADAP
+python plot_results.py --env_name Tree --name CoMeDi
+cd ..
+```
+
+### Balance Beam (Line) Environment
+
+For the baseline (ADAP) and CoMeDi results, run:
+```
+./line_script.sh
+```
+
+You can construct the table from the paper using:
+
+```
+# SP Column
+python testing.py LOAD --ego-load Line/results/1mp0vn/1/convention1/models/actor.pt LOAD --partner-load Line/results/1mp0vn/1/convention1/models/actor.pt --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp25vn/1/convention1/models/actor.pt LOAD --partner-load Line/results/1mp25vn/1/convention1/models/actor.pt --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp5vn/1/convention1/models/actor.pt LOAD --partner-load Line/results/1mp5vn/1/convention1/models/actor.pt --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp1vn/1/convention1/models/actor.pt LOAD --partner-load Line/results/1mp1vn/1/convention1/models/actor.pt --env_name Line
+
+# XP Column (HS column is "fails", PX is "aligned")
+python testing.py LOAD --ego-load Line/results/1mp0vn/1/convention1/models/actor.pt LOAD --partner-load Line/results/1mp0vn/1/convention0/models/actor.pt --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp25vn/1/convention1/models/actor.pt LOAD --partner-load Line/results/1mp25vn/1/convention0/models/actor.pt --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp5vn/1/convention1/models/actor.pt LOAD --partner-load Line/results/1mp5vn/1/convention0/models/actor.pt --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp1vn/1/convention1/models/actor.pt LOAD --partner-load Line/results/1mp1vn/1/convention0/models/actor.pt --env_name Line
+
+# LS Column
+python testing.py LOAD --ego-load Line/results/1mp0vn/1/convention1/models/actor.pt LEFT --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp25vn/1/convention1/models/actor.pt LEFT --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp5vn/1/convention1/models/actor.pt LEFT --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp1vn/1/convention1/models/actor.pt LEFT --env_name Line
+
+# RS Column
+python testing.py LOAD --ego-load Line/results/1mp0vn/1/convention1/models/actor.pt RIGHT --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp25vn/1/convention1/models/actor.pt RIGHT --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp5vn/1/convention1/models/actor.pt RIGHT --env_name Line
+python testing.py LOAD --ego-load Line/results/1mp1vn/1/convention1/models/actor.pt RIGHT --env_name Line
 ```
 
 ## Tree Environment

@@ -40,7 +40,7 @@ def main():
     env = generate_gym(args)
     run_dir = (
         os.path.dirname(os.path.abspath(__file__))
-        + "/"
+        + "/" + ("Validation/" if args.do_validation else "")
         + args.hanabi_name
         + "/results/"
         + (args.run_dir)

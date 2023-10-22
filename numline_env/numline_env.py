@@ -24,7 +24,7 @@ def view(state, time):
     return np.append(state[time:], state[:time])
 
 class PantheonLine(MultiAgentEnv):
-    def __init__(self):
+    def __init__(self, do_test=False):
         super().__init__(ego_ind=0, n_players=2)
 
         # self.observation_space = MultiDiscrete([NUM_SPACES + 2 * BUFFER, NUM_SPACES + 2 * BUFFER, TIME])
@@ -34,6 +34,8 @@ class PantheonLine(MultiAgentEnv):
         self.share_observation_space = self.observation_space
 
         self.state_ind = -1
+
+        self.do_test = do_test
 
         # self.n_reset()
 
@@ -87,7 +89,10 @@ class PantheonLine(MultiAgentEnv):
     def n_reset(self):
         # print("reset")
         self.state_ind = (self.state_ind + 1) % MAX_STATES
-        self.state = generate_state(self.state_ind) #np.random.randint(0, NUM_SPACES, 2)
+        if self.do_test:
+            self.state = generate_state(self.state_ind)
+        else:
+            self.state = np.random.randint(0, NUM_SPACES, 2)
         self.ego_state = np.zeros(TIME)
         self.alt_state = np.zeros(TIME)
         self.current_time = TIME - 1
@@ -96,8 +101,8 @@ class PantheonLine(MultiAgentEnv):
 
 
 class DecentralizedLine(PantheonLine):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, do_test=True):
+        super().__init__(do_test)
 
     def get_full_obs(self):
         obs = super().get_full_obs()
