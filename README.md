@@ -24,7 +24,7 @@ conda create -n CoMeDi python=3.10
 conda activate CoMeDi
 pip install torch numpy
 
-git clone https://github.com/bsarkar321/CoMeDi
+git clone https://github.com/Stanford-ILIAD/Diverse-Conventions
 cd CoMeDi
 git submodule update --init --recursive
 mkdir build
