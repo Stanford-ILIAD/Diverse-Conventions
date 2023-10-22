@@ -1,4 +1,0 @@
-add_subdirectory(hanabi_env)
-add_subdirectory(balance_beam_env)
-add_subdirectory(overcooked2_env)
-

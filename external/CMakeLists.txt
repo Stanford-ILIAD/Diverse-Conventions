@@ -1,1 +1,0 @@
-add_subdirectory(madrona EXCLUDE_FROM_ALL)
