@@ -5,16 +5,14 @@ Use this branch for validating the results of the toy environments (Blind Bandit
 
 ## Installation
 ```
-mkdir Diverse-Conventions
-cd Diverse-Conventions
 conda create --name DiverseConventionsToy python=3.10
 conda activate DiverseConventionsToy
 pip install setuptools==65.5.0 "wheel<0.40.0"
 pip install gym==0.21.0
 pip install stable-baselines3==1.7.0
-git init
-git remote add origin https://github.com/Stanford-ILIAD/Diverse-Conventions.git
-git pull origin master
+
+git clone -b toy --single-branch https://github.com/Stanford-ILIAD/Diverse-Conventions.git
+cd Diverse-Conventions
 git submodule update --init --recursive
 pip install -e .
 cd PantheonRL
