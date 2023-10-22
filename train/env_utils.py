@@ -23,7 +23,7 @@ def generate_env(name, num_envs, layout='simple', use_env_cpu=False, use_baselin
                 device='cpu' if use_env_cpu else 'cuda'
             )
         else:
-            return OvercookedMadrona(layout, num_envs, 0, debug_compile=False, use_env_cpu=use_env_cpu)
+            return OvercookedMadrona(layout, num_envs, 0, debug_compile=False, use_env_cpu=use_env_cpu, use_cpu=True)
     else:
         raise Exception("Invalid environment name")
 
@@ -32,5 +32,5 @@ def set_seed(seed, cuda_deterministic):
     random.seed(seed)
     np.random.seed(seed)
 
-    if cuda_deterministic:
-        torch.use_deterministic_algorithms(True)
+    # if cuda_deterministic:
+    #     torch.use_deterministic_algorithms(True)

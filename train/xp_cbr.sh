@@ -2,10 +2,10 @@
 
 # rm /tmp/simplecookedcache
 
-export CUBLAS_WORKSPACE_CONFIG=:4096:8
+# export CUBLAS_WORKSPACE_CONFIG=:4096:8
 export MADRONA_MWGPU_KERNEL_CACHE=/tmp/simplecookedcache
 export TF_CPP_MIN_LOG_LEVEL=2
-export TF_ENABLE_ONEDNN_OPTS=0
+# export TF_ENABLE_ONEDNN_OPTS=0
 
 for p in 8 6 4
 do

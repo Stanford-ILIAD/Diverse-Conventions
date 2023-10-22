@@ -108,7 +108,7 @@ class OvercookedMadrona(VectorMultiAgentEnv):
 
         obs = [VectorObservation(self.to_torch(self.static_scattered_active_agents[i].to(torch.bool)),
                                  obs0[i],
-                                 action_mask=self.static_action_mask)
+                                 action_mask=self.to_torch(self.static_action_mask))
                for i in range(self.n_players)]
 
         return obs

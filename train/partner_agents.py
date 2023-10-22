@@ -11,6 +11,7 @@ from MAPPO.main_player import MainPlayer
 
 # import numpy as np
 import torch
+import torch.nn.functional as F
 
 # from pantheonrl.common.util import action_from_policy
 
@@ -242,7 +243,45 @@ class MixedAgent(VectorAgent):
 
         self.cent_player.turn_mp_masks[~dones, self.player_id] = 1
         
+class DecentralizedAgent(VectorAgent):
+    def __init__(self, cent_player: MainPlayer, player_id: int, policy=None):
+        self.cent_player = cent_player
+        self.player_id = player_id
+        if policy is None:
+            self.actor = self.cent_player.trainer.policy.actor
+        else:
+            self.actor = policy
 
+        self.rnn_states = torch.zeros(1)
+        self.masks = torch.ones(1)
+
+    def get_action(self, obs, record=True):
+        available_actions = obs.action_mask
+        share_obs = obs.state
+        # choose = obs.active
+        obs = obs.obs
+
+        (action, action_log_prob, rnn_state) = self.actor(
+            obs,
+            self.rnn_states,
+            self.masks,
+            available_actions,
+        )
+
+        return action
+
+    def update(self, rewards, dones):
+        pass
+
+class TFJSAgent(VectorAgent):
+    def __init__(self, read_file: str, player_id: int):
+        self.model = torch.load(read_file).cuda()
+
+    def get_action(self, obs, record=True):
+        return torch.distributions.Categorical(self.model(obs.obs.to(torch.float))).sample().unsqueeze(-1).cpu()
+
+    def update(self, rewards, dones):
+        pass
 
 # class DecentralizedAgent(Agent):
 #     def __init__(self, policy, critic=None):
