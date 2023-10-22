@@ -26,7 +26,7 @@ pip install setuptools==65.5.0 "wheel<0.40.0"
 pip install gym==0.21.0
 pip install stable-baselines3==1.7.0
 
-git clone https://github.com/Stanford-ILIAD/Diverse-Conventions CoMeDi
+git clone -b neurips_comedi --single-branch https://github.com/Stanford-ILIAD/Diverse-Conventions CoMeDi
 cd CoMeDi
 git submodule update --init --recursive
 mkdir build
