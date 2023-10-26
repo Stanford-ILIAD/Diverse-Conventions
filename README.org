@@ -44,19 +44,11 @@
 
 #+html: <div class="row"> <div class="col-md-4 col-md-offset-4 text-center">
 #+attr_html: :class nav nav-pills nav-justified
-- @@html:<a href="https://github.com/Stanford-ILIAD/Diverse-Conventions"><image src="img/paper.png" height="60px"><h4><strong>Paper</strong></h4></a>@@
+- @@html:<a href="https://arxiv.org/abs/2310.15414"><image src="img/paper.png" height="60px"><h4><strong>Paper</strong></h4></a>@@
 - @@html:<a href="https://github.com/Stanford-ILIAD/Diverse-Conventions"><image src="img/GitHub-Mark.png" height="60px"><h4><strong>Code</strong></h4></a>@@
 - @@html:<a href="https://drive.google.com/drive/folders/1SY4X1kEJV8mD1Snb9_pkwiBsqGTf4bn1"><image src="img/dataset.svg" height="60px"><h4><strong>Interaction Data</strong></h4></a>@@
 
 #+html: </div></div>
-
-
-
-
-
-
-
-
 
 #+html: <div class="row"> <div class="col-md-8 col-md-offset-2">
 
