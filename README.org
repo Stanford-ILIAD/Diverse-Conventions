@@ -45,12 +45,21 @@
 #+html: <div class="row"> <div class="col-md-4 col-md-offset-4 text-center">
 #+attr_html: :class nav nav-pills nav-justified
 - @@html:<a href="https://arxiv.org/abs/2310.15414"><image src="img/paper.png" height="60px"><h4><strong>Paper</strong></h4></a>@@
+- @@html:<a href="https://youtu.be/wm4f0sdKIUA"><image src="img/youtube_icon.png" height="60px"><h4><strong>Video</strong></h4></a>@@
 - @@html:<a href="https://github.com/Stanford-ILIAD/Diverse-Conventions"><image src="img/GitHub-Mark.png" height="60px"><h4><strong>Code</strong></h4></a>@@
 - @@html:<a href="https://drive.google.com/drive/folders/1SY4X1kEJV8mD1Snb9_pkwiBsqGTf4bn1"><image src="img/dataset.svg" height="60px"><h4><strong>Interaction Data</strong></h4></a>@@
 
 #+html: </div></div>
 
 #+html: <div class="row"> <div class="col-md-8 col-md-offset-2">
+
+#+BEGIN_export html
+
+<div style="position:relative;padding-top:56.25%;">
+              <!-- <iframe width="560" height="315" src="https://www.youtube.com/embed/UuKAp9a6wMs" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe> -->
+	      <iframe src="https://www.youtube.com/embed/wm4f0sdKIUA?si=ZCvJyvJLZsCa3FjH" width="560" height="315" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
+            </div>
+#+END_export
 
 * 
 
@@ -113,7 +122,7 @@ In the space below, we have a live demo of the trained agents in Overcooked. You
 #+html: <div class="contentx">
 #+BEGIN_export html
 <style>
-iframe {
+#GameFrame {
   width: 100%;
 height: 60em;
 overflow: hidden;
@@ -122,10 +131,10 @@ padding-top: 20px;
 }
 </style> 
 
-<iframe src="https://cs.stanford.edu/~bidiptas/overcooked_demo/" scrolling="no"></iframe> 
+<iframe id="GameFrame" src="https://cs.stanford.edu/~bidiptas/overcooked_demo/" scrolling="no"></iframe> 
 
 <script>
-parent.document.getElementsByTagName('iframe')[0].scrolling="no";
+parent.document.getElementsByTagName('iframe')[1].scrolling="no";
 </script>
 #+END_export
 #+html: </div>
